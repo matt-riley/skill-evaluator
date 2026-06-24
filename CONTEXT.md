@@ -1,83 +1,91 @@
-# Skill Evaluator
+# 📚 Skill Evaluator Context
 
-A standalone, provider-agnostic CLI tool that automates the eval-driven skill iteration loop: defining test cases, spawning agent runs with and without a skill, LLM-grading assertion results, and aggregating benchmarks.
+Welcome to the context guide for the **Skill Evaluator**! This is a standalone, provider-agnostic CLI tool that automates your eval-driven skill iteration loop. It handles everything from defining test cases and spawning agent runs, to LLM-grading and aggregating your benchmarks. 
 
-## Language
+To keep everyone on the same page, we use a specific, friendly vocabulary. Here's a quick guide! 📖
 
-**Skill**:
-A set of instructions and optional scripts that guide an LLM agent's behavior, packaged as a `SKILL.md` file.
-_Avoid_: plugin, extension, prompt
+---
 
-**Eval**:
-A test case consisting of a prompt, an expected output description, optional input files, and a set of assertions.
-_Avoid_: test, test case, scenario
+## 🗣️ Our Language Guide
 
-**Assertion**:
-A verifiable pass/fail statement about what an eval's output should contain or achieve.
-_Avoid_: check, validation rule
+### **Skill** 🛠️
+A set of instructions and optional scripts that guide an LLM agent's behavior, beautifully packaged in a `SKILL.md` file.
+> *Let's avoid: plugin, extension, prompt*
 
-**Run**:
-A single execution of an eval by an agent, producing outputs, timing data, and token counts.
-_Avoid_: execution, invocation
+### **Eval** 🧪
+A single test case! It includes a prompt, an expected output description, optional input files, and some assertions.
+> *Let's avoid: test, test case, scenario*
 
-**Grading**:
-The process of evaluating each assertion against actual run outputs (PASS/FAIL with evidence), typically by an LLM judge.
-_Avoid_: scoring, evaluation (reserved for the broader eval process)
+### **Assertion** ✅
+A verifiable pass/fail statement that checks exactly what an eval's output should contain or achieve.
+> *Let's avoid: check, validation rule*
 
-**Benchmark**:
-Aggregated statistics (mean pass rate, time, tokens, stddev) across all runs in an iteration, with computed deltas between with-skill and without-skill configurations.
-_Avoid_: score, report
+### **Run** 🏃
+A single execution of an eval by an agent. This produces outputs, timing data, and token counts.
+> *Let's avoid: execution, invocation*
 
-**Iteration**:
-One full pass through all evals (run, grade, benchmark), producing an `iteration-N/` directory in the workspace.
-_Avoid_: cycle, round
+### **Grading** 🎓
+The process of evaluating each assertion against the actual run outputs (giving a PASS/FAIL with evidence). This is usually done by our trusty LLM judge!
+> *Let's avoid: scoring, evaluation (we save that word for the whole process!)*
 
-**Workspace**:
-The directory structure where eval results live, organized by iteration and eval, containing outputs, timing, grading, benchmarks, and human feedback.
-_Avoid_: results directory, output directory
+### **Benchmark** 📊
+Your aggregated statistics! This includes the mean pass rate, time, tokens, and standard deviations across all runs in an iteration, complete with deltas.
+> *Let's avoid: score, report*
 
-**Feedback**:
-Human-written notes on eval outputs, capturing qualitative issues that assertions miss.
-_Avoid_: review notes, comments
+### **Iteration** 🔄
+One full, glorious pass through all your evals (run, grade, benchmark). This creates a shiny new `iteration-N/` directory.
+> *Let's avoid: cycle, round*
 
-**Agent Runtime**:
-The external CLI tool that executes runs (e.g., `pi`, `claude`, `copilot`, `codex`). The tool shells out to it rather than embedding an LLM client.
-_Avoid_: provider, backend, executor
+### **Workspace** 🗂️
+The cozy home for all your eval results! It's organized by iteration and eval, keeping all your outputs, timings, and feedback tidy.
+> *Let's avoid: results directory, output directory*
 
-**Global Config**:
-User-wide defaults for agent runtime and model, stored at `~/.config/skill-eval/config.yaml`. A JSON Schema is provided for LSP autocomplete.
-_Avoid_: user config
+### **Feedback** 📝
+Your personal, human-written notes on eval outputs. This captures all the qualitative nuances that assertions might miss.
+> *Let's avoid: review notes, comments*
 
-**Skill Config**:
-Per-skill overrides at `.skill-eval.yaml` in the skill directory, overriding global defaults for that skill. Same YAML format as global config. Both share a JSON Schema.
-_Avoid_: project config, local config
+### **Agent Runtime** 🤖
+The external CLI tool that actually executes your runs (like `pi`, `claude`, `copilot`, or `codex`). We shell out to it to keep things flexible!
+> *Let's avoid: provider, backend, executor*
 
-**Judge**:
-The LLM configuration used for grading assertions — typically a cheaper/faster model than the run model, since grading is read-only. Implemented by shelling out to the same agent runtime with a different model and a grading prompt.
-_Avoid_: grader, evaluator (ambiguous with the tool itself)
+### **Global Config** 🌍
+Your user-wide defaults for the agent runtime and model, safely stored at `~/.config/skill-eval/config.yaml`.
+> *Let's avoid: user config*
 
-**Run Failure**:
-A run that produces no outputs (agent crash, timeout) — recorded as `status: "failed"` and counted as 0% pass rate at aggregation. Does not abort the iteration.
-_Avoid_: error, crash (these are causes, not the result)
+### **Skill Config** 🎯
+Your per-skill overrides, found in `.skill-eval.yaml`. These lovingly override the global defaults just for that specific skill.
+> *Let's avoid: project config, local config*
 
-**Baseline**:
-The comparison configuration for a run — either no-skill (default) or a snapshot of a previous skill version. The workspace uses `baseline/` instead of `without_skill/` to cover both cases.
-_Avoid_: without_skill, old_skill, control
+### **Judge** ⚖️
+The LLM configuration used for grading your assertions. We usually pick a cheaper/faster model for this since grading is a read-only task!
+> *Let's avoid: grader, evaluator*
 
-**Snapshot**:
-A copy of a skill directory taken before an iteration, used as the baseline for the next iteration.
-_Avoid_: backup, clone
+### **Run Failure** 💔
+A run that sadly produced no outputs (like a crash or timeout). It's recorded as `status: "failed"` and counts as a 0% pass rate, but don't worry—it won't abort your iteration!
+> *Let's avoid: error, crash (those are causes, not results!)*
 
-## Relationships
+### **Baseline** 📏
+The comparison point for a run! It can be either no-skill (the default) or a snapshot of a previous skill version. 
+> *Let's avoid: without_skill, old_skill, control*
 
-- A **Skill** is evaluated across multiple **Evals**
-- An **Eval** produces two **Runs** (with-skill and baseline)
-- A **Run** is **Graded** to produce assertion results
-- **Grading** results are aggregated into a **Benchmark**
-- An **Iteration** contains **Runs**, **Grading**, and a **Benchmark**
-- **Feedback** is attached per **Eval** within an **Iteration**
-- Everything lives in a **Workspace**
+### **Snapshot** 📸
+A quick copy of a skill directory taken right before an iteration begins. It serves as the baseline for your next iteration!
+> *Let's avoid: backup, clone*
 
-## Flagged ambiguities
+---
 
-- None yet.
+## 🔗 How Everything Connects
+
+- A **Skill** is evaluated across multiple **Evals**.
+- An **Eval** produces two **Runs** (with-skill and your baseline).
+- A **Run** is **Graded** to produce assertion results.
+- **Grading** results are bundled up into a **Benchmark**.
+- An **Iteration** holds **Runs**, **Grading**, and a **Benchmark**.
+- **Feedback** is lovingly attached per **Eval** inside an **Iteration**.
+- And everything lives happily together in a **Workspace**! 🏡
+
+---
+
+## 🤔 Flagged Ambiguities
+
+- None yet! We're perfectly clear. ✨

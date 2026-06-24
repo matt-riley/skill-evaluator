@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Nunito", "Quicksand", ui-sans-serif, system-ui, sans-serif;
+  --color-neo-pink: #ff6b9e;
+  --color-neo-yellow: #ffdb58;
+  --color-neo-blue: #4dc4ff;
+  --color-neo-green: #4ade80;
+  --color-neo-purple: #c084fc;
+}
+
+body {
+  background-color: #f0fdfa; /* very light mint/cyan */
+  background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+  background-size: 32px 32px;
+}

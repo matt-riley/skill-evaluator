@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/biztocorp/skill-evaluator/schema/config.json",
+  "title": "Skill Evaluator Configuration",
+  "type": "object",
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "description": "Default agent runtime configuration for running evals.",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Agent runtime CLI name.",
+          "enum": ["pi", "claude", "copilot", "codex"]
+        },
+        "model": {
+          "type": "string",
+          "description": "Model name to pass to the agent (optional, uses agent default if unset)."
+        }
+      },
+      "required": ["agent"]
+    },
+    "judge": {
+      "type": "object",
+      "description": "Configuration for the grading judge.",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Agent runtime CLI name for grading.",
+          "enum": ["pi", "claude", "copilot", "codex"]
+        },
+        "model": {
+          "type": "string",
+          "description": "Model name for the judge (optional, defaults to run model if unset)."
+        }
+      }
+    }
+  }
+}

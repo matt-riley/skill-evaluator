@@ -1,9 +1,10 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import Layout from '../layouts/Layout.astro';
+import { buildNavLinks, cleanPath } from '../utils/routing';
 
 export async function getStaticPaths() {
-  const rootDocs = import.meta.glob("../../../../*.md", { eager: true });
-  const adrDocs = import.meta.glob("../../../../docs/adr/*.md", { eager: true });
+  const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
+  const adrDocs = import.meta.glob('../../../../docs/adr/*.md', { eager: true });
 
   const allFilesRaw = { ...rootDocs, ...adrDocs };
 
@@ -11,58 +12,27 @@ export async function getStaticPaths() {
   const allFiles = Object.keys(allFilesRaw).reduce((acc, key) => {
     const lowerKey = key.toLowerCase();
     if (
-      !lowerKey.endsWith("agents.md") && 
-      !lowerKey.endsWith("claude.md") && 
-      !lowerKey.endsWith("context.md")
+      !lowerKey.endsWith('agents.md') && 
+      !lowerKey.endsWith('claude.md') && 
+      !lowerKey.endsWith('context.md')
     ) {
       acc[key] = allFilesRaw[key];
     }
     return acc;
   }, {});
 
-  const baseNavLinks = Object.keys(allFiles).map(key => {
-    const path = key
-      .replace(/^(\.\.\/)+/, "")
-      .replace(/^docs\//, "")
-      .replace(".md", "");
-    
-    const segments = path.split("/");
-    const name = segments[segments.length - 1];
-    const title = name
-      .split("-")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-      
-    return {
-      path: path.toLowerCase(),
-      title: title,
-      isAdr: path.startsWith("adr/")
-    };
-  }).sort((a, b) => {
-    if (a.isAdr && !b.isAdr) return 1;
-    if (!a.isAdr && b.isAdr) return -1;
-    return a.title.localeCompare(b.title);
-  });
-
   const paths = [];
 
   for (const key of Object.keys(allFiles)) {
     const doc = allFiles[key];
-    const relativePath = key
-      .replace(/^(\.\.\/)+/, "")
-      .replace(/^docs\//, "")
-      .replace(".md", "")
-      .toLowerCase();
+    const relativePath = cleanPath(key).toLowerCase();
       
     let slug = relativePath;
-    if (slug === "readme") {
+    if (slug === 'readme') {
       slug = undefined;
     }
 
-    const navLinks = baseNavLinks.map(link => ({
-      ...link,
-      isActive: link.path === (slug || "readme")
-    }));
+    const navLinks = buildNavLinks(Object.keys(allFiles), slug || 'readme');
 
     paths.push({
       params: { slug },
@@ -77,11 +47,10 @@ const { doc, navLinks } = Astro.props;
 const Content = doc.default || doc.Content || doc;
 
 let { slug } = Astro.params;
-if (!slug || slug === "") slug = "README";
+if (!slug || slug === '') slug = 'README';
 
 const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
 ---
-
 <Layout title={doc.frontmatter?.title || slug}>
   <div class="flex min-h-screen text-black font-sans selection:bg-neo-pink selection:text-white">
     <!-- Sidebar -->

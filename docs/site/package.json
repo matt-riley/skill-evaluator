@@ -13,7 +13,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.1.10",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.0",
     "tailwindcss": "^4.0.0"
@@ -22,6 +21,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "oxfmt": "^0.55.0",
     "oxlint": "^1.0.0",
+    "sharp": "^0.35.2",
     "vitest": "^4.0.0",
     "wrangler": "^4.0.0"
   },

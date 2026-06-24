@@ -1,70 +1,83 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-export const prerender = false;
+export async function getStaticPaths() {
+  const rootDocs = import.meta.glob("../../../../*.md", { eager: true });
+  const adrDocs = import.meta.glob("../../../../docs/adr/*.md", { eager: true });
 
-const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
-const adrDocs = import.meta.glob('../../../../docs/adr/*.md', { eager: true });
+  const allFilesRaw = { ...rootDocs, ...adrDocs };
 
-const allFilesRaw = { ...rootDocs, ...adrDocs };
+  // Filter out agent instruction files from the documentation
+  const allFiles = Object.keys(allFilesRaw).reduce((acc, key) => {
+    const lowerKey = key.toLowerCase();
+    if (
+      !lowerKey.endsWith("agents.md") && 
+      !lowerKey.endsWith("claude.md") && 
+      !lowerKey.endsWith("context.md")
+    ) {
+      acc[key] = allFilesRaw[key];
+    }
+    return acc;
+  }, {});
 
-// Filter out agent instruction files from the documentation
-const allFiles = Object.keys(allFilesRaw).reduce((acc, key) => {
-  const lowerKey = key.toLowerCase();
-  if (
-    !lowerKey.endsWith('agents.md') && 
-    !lowerKey.endsWith('claude.md') && 
-    !lowerKey.endsWith('context.md')
-  ) {
-    acc[key] = allFilesRaw[key];
+  const baseNavLinks = Object.keys(allFiles).map(key => {
+    const path = key
+      .replace(/^(\.\.\/)+/, "")
+      .replace(/^docs\//, "")
+      .replace(".md", "");
+    
+    const segments = path.split("/");
+    const name = segments[segments.length - 1];
+    const title = name
+      .split("-")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+      
+    return {
+      path: path.toLowerCase(),
+      title: title,
+      isAdr: path.startsWith("adr/")
+    };
+  }).sort((a, b) => {
+    if (a.isAdr && !b.isAdr) return 1;
+    if (!a.isAdr && b.isAdr) return -1;
+    return a.title.localeCompare(b.title);
+  });
+
+  const paths = [];
+
+  for (const key of Object.keys(allFiles)) {
+    const doc = allFiles[key];
+    const relativePath = key
+      .replace(/^(\.\.\/)+/, "")
+      .replace(/^docs\//, "")
+      .replace(".md", "")
+      .toLowerCase();
+      
+    let slug = relativePath;
+    if (slug === "readme") {
+      slug = undefined;
+    }
+
+    const navLinks = baseNavLinks.map(link => ({
+      ...link,
+      isActive: link.path === (slug || "readme")
+    }));
+
+    paths.push({
+      params: { slug },
+      props: { doc, navLinks }
+    });
   }
-  return acc;
-}, {} as Record<string, any>);
-
-let { slug } = Astro.params;
-if (!slug || slug === '') slug = 'README';
-
-let matchKey = Object.keys(allFiles).find(key => {
-  const relativePath = key
-    .replace(/^(\.\.\/)+/, '')
-    .replace(/^docs\//, '')
-    .replace('.md', '');
-  return relativePath.toLowerCase() === slug.toLowerCase();
-});
-
-if (!matchKey && slug === 'README') {
-  matchKey = Object.keys(allFiles).find(k => k.toLowerCase().endsWith('readme.md'));
+  
+  return paths;
 }
 
-if (!matchKey || !allFiles[matchKey]) return Astro.redirect('/404');
-
-const doc = allFiles[matchKey] as any;
+const { doc, navLinks } = Astro.props;
 const Content = doc.default || doc.Content || doc;
 
-const navLinks = Object.keys(allFiles).map(key => {
-  const path = key
-    .replace(/^(\.\.\/)+/, '')
-    .replace(/^docs\//, '')
-    .replace('.md', '');
-  
-  const segments = path.split('/');
-  const name = segments[segments.length - 1];
-  const title = name
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-    
-  return {
-    path: path.toLowerCase(),
-    title: title,
-    isActive: path.toLowerCase() === slug.toLowerCase(),
-    isAdr: path.startsWith('adr/')
-  };
-}).sort((a, b) => {
-  if (a.isAdr && !b.isAdr) return 1;
-  if (!a.isAdr && b.isAdr) return -1;
-  return a.title.localeCompare(b.title);
-});
+let { slug } = Astro.params;
+if (!slug || slug === "") slug = "README";
 
 const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
 ---

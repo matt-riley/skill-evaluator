@@ -73,7 +73,7 @@ func parseEvalFlag(args []string) int {
 	for i := 0; i < len(args); i++ {
 		if args[i] == "--eval" && i+1 < len(args) {
 			var id int
-			fmt.Sscanf(args[i+1], "%d", &id)
+			_, _ = fmt.Sscanf(args[i+1], "%d", &id)
 			return id
 		}
 	}
@@ -225,7 +225,6 @@ func cmdRun(args []string) error {
 		fmt.Printf("Snapshotted skill as baseline: %s\n", snapshotPath)
 	}
 
-	var results []*RunResult
 	ctx := context.Background()
 
 	for _, eval := range ef.Evals {
@@ -242,7 +241,6 @@ func cmdRun(args []string) error {
 			return fmt.Errorf("eval %d with_skill: %w", eval.ID, err)
 		}
 		fmt.Printf("%s (%dms)\n", r.Status, r.Timing.DurationMs)
-		results = append(results, r)
 
 		// Baseline run
 		fmt.Print("  baseline... ")
@@ -251,7 +249,6 @@ func cmdRun(args []string) error {
 			return fmt.Errorf("eval %d baseline: %w", eval.ID, err)
 		}
 		fmt.Printf("%s (%dms)\n", r.Status, r.Timing.DurationMs)
-		results = append(results, r)
 	}
 
 	fmt.Printf("\nDone. Results in %s\n", iterationPath(ws, iter))
@@ -358,7 +355,7 @@ func cmdBenchmark(args []string) error {
 			continue
 		}
 		var evalID int
-		fmt.Sscanf(e.Name(), "eval-%d", &evalID)
+		_, _ = fmt.Sscanf(e.Name(), "eval-%d", &evalID)
 
 		for _, config := range []string{"with_skill", "baseline"} {
 			gradingPath := filepath.Join(iterationPath(ws, iter), e.Name(), config, "grading.json")

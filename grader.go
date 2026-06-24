@@ -131,13 +131,13 @@ func buildGradingPrompt(eval Eval, outputContents map[string]string) string {
 		b.WriteString("(no output files found)\n")
 	} else {
 		for name, content := range outputContents {
-			b.WriteString(fmt.Sprintf("\n--- %s ---\n%s\n", name, content))
+			fmt.Fprintf(&b, "\n--- %s ---\n%s\n", name, content)
 		}
 	}
 
 	b.WriteString("\nAssertions to verify:\n")
 	for i, a := range eval.Assertions {
-		b.WriteString(fmt.Sprintf("%d. %s\n", i+1, a))
+		fmt.Fprintf(&b, "%d. %s\n", i+1, a)
 	}
 
 	b.WriteString(`
@@ -167,6 +167,7 @@ func parseGradingOutput(output string, assertions []string) (*GradingFile, error
 	}
 	jsonStr := ""
 	depth := 0
+outer:
 	for i := start; i < len(output); i++ {
 		switch output[i] {
 		case '{':
@@ -175,7 +176,7 @@ func parseGradingOutput(output string, assertions []string) (*GradingFile, error
 			depth--
 			if depth == 0 {
 				jsonStr = output[start : i+1]
-				break
+				break outer
 			}
 		}
 	}
@@ -194,7 +195,7 @@ func parseGradingOutput(output string, assertions []string) (*GradingFile, error
 // saveGrading writes a GradingFile to disk.
 func saveGrading(path string, gf *GradingFile) {
 	data, _ := json.MarshalIndent(gf, "", "  ")
-	os.WriteFile(path, data, 0o644)
+	_ = os.WriteFile(path, data, 0o644)
 }
 
 // truncate shortens a string for error messages.

@@ -56,7 +56,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")
 	timingJSON, _ := json.MarshalIndent(result.Timing, "", "  ")
-	os.WriteFile(timingPath, timingJSON, 0o644)
+	_ = os.WriteFile(timingPath, timingJSON, 0o644)
 
 	entries, _ := os.ReadDir(outDir)
 	for _, e := range entries {
@@ -84,13 +84,13 @@ func buildRunPrompt(skillPath string, eval Eval, outDir string) string {
 	b.WriteString("Execute this task in non-interactive mode (do not ask questions, do not wait for confirmation).\n")
 
 	if skillPath != "" {
-		b.WriteString(fmt.Sprintf("- Skill path: %s\n", skillPath))
+		fmt.Fprintf(&b, "- Skill path: %s\n", skillPath)
 	}
-	b.WriteString(fmt.Sprintf("- Task: %s\n", eval.Prompt))
+	fmt.Fprintf(&b, "- Task: %s\n", eval.Prompt)
 	if len(eval.Files) > 0 {
-		b.WriteString(fmt.Sprintf("- Input files: %s\n", strings.Join(eval.Files, ", ")))
+		fmt.Fprintf(&b, "- Input files: %s\n", strings.Join(eval.Files, ", "))
 	}
-	b.WriteString(fmt.Sprintf("- Save outputs to: %s\n", outDir))
+	fmt.Fprintf(&b, "- Save outputs to: %s\n", outDir)
 
 	return b.String()
 }

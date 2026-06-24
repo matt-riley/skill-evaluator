@@ -46,13 +46,13 @@ type GradingSummary struct {
 
 // RunResult captures the outcome of a single run (with-skill or baseline).
 type RunResult struct {
-	EvalID   int
-	Config   string // "with_skill" or "baseline"
-	Status   string // "ok" or "failed"
-	ErrMsg   string
-	Timing   *TimingData
-	Outputs  []string // relative paths within the output dir
-	Grading  *GradingFile
+	EvalID  int
+	Config  string // "with_skill" or "baseline"
+	Status  string // "ok" or "failed"
+	ErrMsg  string
+	Timing  *TimingData
+	Outputs []string // relative paths within the output dir
+	Grading *GradingFile
 }
 
 // RunSummary holds aggregated stats for one configuration across all evals.

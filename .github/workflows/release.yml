@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}:${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    uses: matt-riley/matt-riley-ci/.github/workflows/release-please.yml@098848d01b058526398113ee20eccadf30f4b881 # v1.9.2
+    secrets:
+      token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+  goreleaser:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: matt-riley/matt-riley-ci/.github/workflows/go-goreleaser.yml@098848d01b058526398113ee20eccadf30f4b881 # v1.9.2
+    secrets:
+      github-token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      homebrew-tap-token: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN || secrets.RELEASE_PLEASE_TOKEN }}

@@ -30,7 +30,7 @@ You'll see something like this:
 }
 ```
 
-![Reading benchmark results](/guides/reading-results.gif)
+<video src="/guides/reading-results.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" />
 
 ### What each field means
 

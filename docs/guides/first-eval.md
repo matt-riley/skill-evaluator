@@ -86,7 +86,7 @@ Watch it go! This single command handles the whole cycle:
 2. **Grade** — asks the judge agent to check each assertion, producing a `grading.json` with PASS/FAIL verdicts.
 3. **Benchmark** — rolls all the stats up into a `benchmark.json` so you can see the delta at a glance.
 
-![Running your first eval end-to-end](/guides/first-eval.gif)
+<video src="/guides/first-eval.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" />
 
 ---
 

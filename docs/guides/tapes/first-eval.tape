@@ -1,9 +1,9 @@
-Output docs/site/public/guides/first-eval.gif
+Output docs/site/public/guides/first-eval.mp4
 
 Set Shell "bash"
-Set FontSize 16
-Set Width 1200
-Set Height 700
+Set FontSize 18
+Set Width 1400
+Set Height 800
 Set Theme "Catppuccin Mocha"
 Set Padding 24
 Set TypingSpeed 40ms

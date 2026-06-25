@@ -84,15 +84,18 @@ type FixResult struct {
 	Converged bool         `json:"converged"`
 }
 
+// Delta holds with_skill - baseline differences.
+type Delta struct {
+	PassRate    float64 `json:"pass_rate"`
+	TimeSeconds float64 `json:"time_seconds"`
+	Tokens      float64 `json:"tokens"`
+}
+
 // ModelBenchmark holds per-model aggregated stats.
 type ModelBenchmark struct {
 	WithSkill RunSummary `json:"with_skill"`
 	Baseline  RunSummary `json:"baseline"`
-	Delta     struct {
-		PassRate    float64 `json:"pass_rate"`
-		TimeSeconds float64 `json:"time_seconds"`
-		Tokens      float64 `json:"tokens"`
-	} `json:"delta"`
+	Delta     Delta      `json:"delta"`
 }
 
 // BenchmarkFile is written to benchmark.json.
@@ -100,11 +103,7 @@ type BenchmarkFile struct {
 	RunSummary struct {
 		WithSkill RunSummary `json:"with_skill"`
 		Baseline  RunSummary `json:"baseline"`
-		Delta     struct {
-			PassRate    float64 `json:"pass_rate"`
-			TimeSeconds float64 `json:"time_seconds"`
-			Tokens      float64 `json:"tokens"`
-		} `json:"delta"`
+		Delta     Delta      `json:"delta"`
 	} `json:"run_summary,omitempty"`
 	Models      map[string]ModelBenchmark `json:"models,omitempty"`
 	BestModel   string                    `json:"best_model,omitempty"`

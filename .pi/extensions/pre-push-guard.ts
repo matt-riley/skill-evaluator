@@ -12,6 +12,48 @@ import { join } from "node:path";
 
 type Check = { label: string; command: string; args: string[] };
 
+type Detector = { test: (cwd: string) => boolean | string[]; checks: (cwd: string) => Check[] };
+
+const DETECTORS: Detector[] = [
+  {
+    test: (cwd) => ["go.mod", ".golangci.yml", ".golangci.yaml"].map((f) => join(cwd, f)),
+    checks: (cwd) => {
+      const out: Check[] = [{ label: "gofmt", command: "gofmt", args: ["-d", "."] }];
+      if (existsSync(join(cwd, ".golangci.yml")) || existsSync(join(cwd, ".golangci.yaml"))) {
+        out.push({ label: "golangci-lint", command: "golangci-lint", args: ["run", "./..."] });
+      }
+      return out;
+    },
+  },
+  {
+    test: (cwd) => join(cwd, "package.json"),
+    checks: (cwd) => {
+      try {
+        const pkg = JSON.parse(readFileSync(join(cwd, "package.json"), "utf-8"));
+        const scripts = pkg.scripts || {};
+        const out: Check[] = [];
+        if (scripts.format || scripts.fmt) {
+          out.push({ label: "format", command: "npm", args: ["run", scripts.format ? "format" : "fmt"] });
+        }
+        if (scripts.lint) {
+          out.push({ label: "lint", command: "npm", args: ["run", "lint"] });
+        }
+        return out;
+      } catch {
+        return [];
+      }
+    },
+  },
+  {
+    test: (cwd) => [join(cwd, "pyproject.toml"), join(cwd, "setup.cfg")],
+    checks: () => [{ label: "ruff", command: "ruff", args: ["check", "."] }],
+  },
+];
+
+function anyExists(paths: string[]): boolean {
+  return paths.some((p) => existsSync(p));
+}
+
 async function detectChecks(cwd: string, pi: ExtensionAPI): Promise<Check[]> {
   // Primary: mise.toml tasks
   if (existsSync(join(cwd, "mise.toml"))) {
@@ -28,39 +70,12 @@ async function detectChecks(cwd: string, pi: ExtensionAPI): Promise<Check[]> {
 
   // Fallback: auto-detect from project files
   const checks: Check[] = [];
-
-  // Go
-  if (existsSync(join(cwd, "go.mod"))) {
-    checks.push({ label: "gofmt", command: "gofmt", args: ["-d", "."] });
-    // golangci-lint: check if installed or configured
-    if (existsSync(join(cwd, ".golangci.yml")) || existsSync(join(cwd, ".golangci.yaml"))) {
-      checks.push({ label: "golangci-lint", command: "golangci-lint", args: ["run", "./..."] });
+  for (const d of DETECTORS) {
+    const t = d.test(cwd);
+    if (Array.isArray(t) ? anyExists(t) : existsSync(t)) {
+      checks.push(...d.checks(cwd));
     }
   }
-
-  // JavaScript/TypeScript
-  if (existsSync(join(cwd, "package.json"))) {
-    try {
-      const pkg = JSON.parse(readFileSync(join(cwd, "package.json"), "utf-8"));
-      const scripts = pkg.scripts || {};
-      if (scripts.format) {
-        checks.push({ label: "format", command: "npm", args: ["run", "format"] });
-      } else if (scripts.fmt) {
-        checks.push({ label: "fmt", command: "npm", args: ["run", "fmt"] });
-      }
-      if (scripts.lint) {
-        checks.push({ label: "lint", command: "npm", args: ["run", "lint"] });
-      }
-    } catch {
-      // package.json unreadable — skip JS checks
-    }
-  }
-
-  // Python
-  if (existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "setup.cfg"))) {
-    checks.push({ label: "ruff", command: "ruff", args: ["check", "."] });
-  }
-
   return checks;
 }
 

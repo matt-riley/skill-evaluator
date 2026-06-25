@@ -28,9 +28,7 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 		// Single model (or legacy) — use flat summary format
 		for _, rs := range byModel {
 			bf.RunSummary.WithSkill, bf.RunSummary.Baseline = splitAndAggregate(rs)
-			bf.RunSummary.Delta.PassRate = bf.RunSummary.WithSkill.PassRate.Mean - bf.RunSummary.Baseline.PassRate.Mean
-			bf.RunSummary.Delta.TimeSeconds = bf.RunSummary.WithSkill.TimeSeconds.Mean - bf.RunSummary.Baseline.TimeSeconds.Mean
-			bf.RunSummary.Delta.Tokens = bf.RunSummary.WithSkill.Tokens.Mean - bf.RunSummary.Baseline.Tokens.Mean
+			bf.RunSummary.Delta = computeDelta(bf.RunSummary.WithSkill, bf.RunSummary.Baseline)
 		}
 	} else {
 		// Multi-model — use models map
@@ -39,10 +37,7 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 		worstDelta := 999.0
 		for mk, rs := range byModel {
 			ws, bs := splitAndAggregate(rs)
-			mb := ModelBenchmark{WithSkill: ws, Baseline: bs}
-			mb.Delta.PassRate = ws.PassRate.Mean - bs.PassRate.Mean
-			mb.Delta.TimeSeconds = ws.TimeSeconds.Mean - bs.TimeSeconds.Mean
-			mb.Delta.Tokens = ws.Tokens.Mean - bs.Tokens.Mean
+			mb := ModelBenchmark{WithSkill: ws, Baseline: bs, Delta: computeDelta(ws, bs)}
 			bf.Models[mk] = mb
 
 			if mb.Delta.PassRate > bestDelta {
@@ -125,4 +120,12 @@ func stddev(vals []float64) float64 {
 		sumSq += d * d
 	}
 	return math.Sqrt(sumSq / float64(len(vals)))
+}
+
+func computeDelta(withSkill, baseline RunSummary) Delta {
+	return Delta{
+		PassRate:    withSkill.PassRate.Mean - baseline.PassRate.Mean,
+		TimeSeconds: withSkill.TimeSeconds.Mean - baseline.TimeSeconds.Mean,
+		Tokens:      withSkill.Tokens.Mean - baseline.Tokens.Mean,
+	}
 }

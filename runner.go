@@ -81,19 +81,7 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 
 // buildRunPrompt follows the agentskills.io eval run convention.
 func buildRunPrompt(skillPath string, eval Eval, outDir string) string {
-	var b strings.Builder
-	b.WriteString("Execute this task in non-interactive mode (do not ask questions, do not wait for confirmation).\n")
-
-	if skillPath != "" {
-		fmt.Fprintf(&b, "- Skill path: %s\n", skillPath)
-	}
-	fmt.Fprintf(&b, "- Task: %s\n", eval.Prompt)
-	if len(eval.Files) > 0 {
-		fmt.Fprintf(&b, "- Input files: %s\n", strings.Join(eval.Files, ", "))
-	}
-	fmt.Fprintf(&b, "- Save outputs to: %s\n", outDir)
-
-	return b.String()
+	return buildPrompt(skillPath, eval, outDir, "")
 }
 
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
@@ -193,6 +181,10 @@ func readEvals(skillDir string) (*EvalFile, error) {
 
 // buildFixPrompt creates a task prompt with critique from a previous failed attempt.
 func buildFixPrompt(skillPath string, eval Eval, outDir string, critique string) string {
+	return buildPrompt(skillPath, eval, outDir, critique)
+}
+
+func buildPrompt(skillPath string, eval Eval, outDir, critique string) string {
 	var b strings.Builder
 	b.WriteString("Execute this task in non-interactive mode (do not ask questions, do not wait for confirmation).\n")
 

@@ -5,74 +5,55 @@ export function cleanPath(key: string): string {
     .replace(/\.md$/i, "");
 }
 
-const DOC_ORDER = [
-  "readme",
-  "quick-start",
-  "eval-workflow",
-  "commands",
-  "configuration",
-  "workspace",
-];
+type NavMeta = { path: string; title?: string };
 
-const GUIDE_ORDER = [
-  "guides/first-eval",
-  "guides/reading-results",
-  "guides/giving-feedback",
-  "guides/auto-fixing",
-  "guides/cross-model",
+const ORDERED_PAGES: NavMeta[] = [
+  { path: "readme", title: "Home" },
+  { path: "quick-start" },
+  { path: "eval-workflow" },
+  { path: "commands" },
+  { path: "configuration" },
+  { path: "workspace" },
+  { path: "guides/first-eval" },
+  { path: "guides/reading-results" },
+  { path: "guides/giving-feedback" },
+  { path: "guides/auto-fixing" },
+  { path: "guides/cross-model" },
 ];
-const TITLE_OVERRIDES: Record<string, string> = {
-  readme: "Home",
-};
 
 function formatTitle(name: string): string {
-  const lowerName = name.toLowerCase();
-  if (TITLE_OVERRIDES[lowerName]) return TITLE_OVERRIDES[lowerName];
-
-  return lowerName.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return name.toLowerCase().replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function buildNavLinks(keys: string[]) {
+  const orderMap = new Map(ORDERED_PAGES.map((m, i) => [m.path, i]));
+
   const links = keys.map((key) => {
-    const path = cleanPath(key);
-    const segments = path.split("/");
-    const name = segments[segments.length - 1];
+    const path = cleanPath(key).toLowerCase();
+    const name = path.split("/").pop()!;
+    const meta = ORDERED_PAGES.find((m) => m.path === path);
 
     return {
-      path: path.toLowerCase(),
-      title: formatTitle(name),
+      path,
+      title: meta?.title ?? formatTitle(name),
       isAdr: path.startsWith("adr/"),
       isGuide: path.startsWith("guides/"),
     };
   });
 
-  const orderedCompare = (a: string, b: string, order: string[]) => {
-    const ai = order.indexOf(a);
-    const bi = order.indexOf(b);
-    if (ai >= 0 && bi >= 0) return ai - bi;
-    if (ai >= 0) return -1;
-    if (bi >= 0) return 1;
-    return undefined;
-  };
-
   return links.sort((a, b) => {
-    // Changelog is always last, even below ADRs.
     if (a.path === "changelog") return 1;
     if (b.path === "changelog") return -1;
 
-    // ADRs sink below guides and normal docs.
     if (a.isAdr && !b.isAdr) return 1;
     if (!a.isAdr && b.isAdr) return -1;
 
-    // Guides sit between normal docs and ADRs.
     if (a.isGuide && !b.isGuide) return 1;
     if (!a.isGuide && b.isGuide) return -1;
 
-    const docCmp = orderedCompare(a.path, b.path, DOC_ORDER);
-    if (docCmp !== undefined) return docCmp;
-
-    const guideCmp = orderedCompare(a.path, b.path, GUIDE_ORDER);
-    if (guideCmp !== undefined) return guideCmp;
+    const ai = orderMap.get(a.path) ?? Infinity;
+    const bi = orderMap.get(b.path) ?? Infinity;
+    if (ai !== Infinity || bi !== Infinity) return ai - bi;
 
     return a.title.localeCompare(b.title);
   });

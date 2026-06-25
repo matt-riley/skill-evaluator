@@ -7,7 +7,7 @@
 > in `plans/README.md` — unless a reviewer dispatched you and told you they
 > maintain the index.
 >
-> **Drift check (run first)**: `git diff --stat 8b20fcd..HEAD -- docs/site/astro.config.mjs docs/site/src/pages/[...slug].astro`
+> **Drift check (run first)**: `git diff --stat 874d1ad..HEAD -- docs/site/astro.config.mjs docs/site/src/pages/[...slug].astro`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.
@@ -19,7 +19,7 @@
 - **Risk**: LOW
 - **Depends on**: none
 - **Category**: perf
-- **Planned at**: commit `8b20fcd`, 2026-06-24
+- **Planned at**: commit `874d1ad`, 2026-06-24
 
 ## Why this matters
 

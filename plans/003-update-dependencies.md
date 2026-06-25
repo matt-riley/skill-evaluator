@@ -7,7 +7,7 @@
 > in `plans/README.md` — unless a reviewer dispatched you and told you they
 > maintain the index.
 >
-> **Drift check (run first)**: `git diff --stat 8b20fcd..HEAD -- docs/site/package.json docs/site/pnpm-lock.yaml`
+> **Drift check (run first)**: `git diff --stat a573a68..HEAD -- docs/site/package.json docs/site/pnpm-lock.yaml`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.
@@ -19,25 +19,22 @@
 - **Risk**: LOW
 - **Depends on**: none
 - **Category**: security
-- **Planned at**: commit `8b20fcd`, 2026-06-24
+- **Planned at**: commit `874d1ad`, 2026-06-24
+- **Resolved at**: commit `a573a68`, 2026-06-25
+- **Resolution**: Dependencies updated (astro 6.3.7→7.0.2, wrangler 4.101.0→4.104.0). Audit: 16→1 (0 high, 0 low, 1 moderate in unfixable transitive `yaml` dep under `@astrojs/language-server`). All scripts pass: build, format:check, astro check (0 errors), test (14 passed).
 
 ## Why this matters
 
 The `pnpm audit` command currently reports 15 vulnerabilities (6 high, 5 moderate, 4 low), primarily in `undici` and `esbuild`. These are transitively imported by `wrangler` and `vitest` in the `docs/site` package. While these dependencies are strictly for build/dev-time, leaving known high-severity CVEs in the lockfile risks supply-chain exploitation during local development or CI. Updating the vulnerable dependencies patches these security holes.
 
-## Current state
+## Resolved state
 
-- `docs/site/package.json` — Defines the devDependencies.
-  - Lines 21-27:
-    ```json
-      "devDependencies": {
-        "@tailwindcss/typography": "^0.5.20",
-        "oxfmt": "^0.55.0",
-        "oxlint": "^1.0.0",
-        "vitest": "^4.0.0",
-        "wrangler": "^4.0.0"
-      },
-    ```
+After update:
+- `astro`: 6.3.7 → 7.0.2 (patches GHSA-2pvr-wf23-7pc7, GHSA-jrpj-wcv7-9fh9)
+- `wrangler`: 4.101.0 → 4.104.0 (bumps transitive `undici` and `ws` to patched versions)
+- `vitest`: already at latest 4.x (vite already at patched version)
+
+One unfixable moderate remains: `yaml` <2.8.3 deep under `@astrojs/check → @astrojs/language-server → volar-service-yaml → yaml-language-server`. Not runtime-exploitable; awaits upstream release.
 
 ## Commands you will need
 

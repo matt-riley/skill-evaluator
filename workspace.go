@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,4 +56,92 @@ func snapshotSkill(skillDir, workspace string, iteration int) (string, error) {
 		return "", fmt.Errorf("snapshot: %w", err)
 	}
 	return dst, nil
+}
+
+// lockPath returns the path to an iteration's lockfile.
+func lockPath(workspace string, iter int) string {
+	return filepath.Join(iterationPath(workspace, iter), ".lock.json")
+}
+
+// readLock reads and parses an iteration lockfile.
+func readLock(workspace string, iter int) (*IterationLock, error) {
+	data, err := os.ReadFile(lockPath(workspace, iter))
+	if err != nil {
+		return nil, err
+	}
+	var lock IterationLock
+	if err := json.Unmarshal(data, &lock); err != nil {
+		return nil, err
+	}
+	lock.Iteration = iter
+	return &lock, nil
+}
+
+// writeLock atomically writes an iteration lockfile.
+func writeLock(workspace string, lock *IterationLock) error {
+	path := lockPath(workspace, lock.Iteration)
+	if err := ensureDir(filepath.Dir(path)); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(lock, "", "  ")
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".lock-*.json")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return os.Rename(tmpPath, path)
+}
+
+// isCompleted reports whether a run triple is already recorded as completed.
+func isCompleted(lock *IterationLock, evalID int, model, config string) bool {
+	for _, c := range lock.Completed {
+		if c.EvalID == evalID && c.Model == model && c.Config == config {
+			return true
+		}
+	}
+	return false
+}
+
+// findRunningIteration returns the latest iteration whose lockfile status is "running".
+func findRunningIteration(workspace string) (int, *IterationLock, error) {
+	entries, _ := os.ReadDir(workspace)
+	maxIter := 0
+	var latest *IterationLock
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		n, err := strconv.Atoi(strings.TrimPrefix(e.Name(), "iteration-"))
+		if err != nil {
+			continue
+		}
+		if n <= maxIter {
+			continue
+		}
+		lock, err := readLock(workspace, n)
+		if err != nil {
+			continue
+		}
+		if lock.Status == "running" {
+			maxIter = n
+			latest = lock
+		}
+	}
+	if latest == nil {
+		return 0, nil, fmt.Errorf("no running iteration found in %s", workspace)
+	}
+	return maxIter, latest, nil
 }

@@ -52,6 +52,22 @@ type AssertionResult struct {
 	Evidence string `json:"evidence"`
 }
 
+// IterationLock tracks progress for a single iteration.
+type IterationLock struct {
+	Iteration int           `json:"iteration"`
+	Status    string        `json:"status"` // "running" | "complete"
+	Completed []RunIdentity `json:"completed"`
+	StartedAt time.Time     `json:"started_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+// RunIdentity identifies a completed eval/model/config triple.
+type RunIdentity struct {
+	EvalID int    `json:"eval_id"`
+	Model  string `json:"model"`
+	Config string `json:"config"`
+}
+
 // GradingFile is written to grading.json.
 type GradingFile struct {
 	AssertionResults []AssertionResult `json:"assertion_results"`

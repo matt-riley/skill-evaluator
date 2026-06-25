@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -214,6 +215,7 @@ func cmdRun(args []string) error {
 	baselineFlag := fs.String("baseline", "none", "Baseline for runs")
 	evalID := fs.Int("eval", -1, "Run a single eval by ID")
 	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs (e.g. pi:claude-sonnet,claude)")
+	resume := fs.Bool("resume", false, "Resume the latest running iteration")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -243,9 +245,33 @@ func cmdRun(args []string) error {
 	multiModel := len(cliModels) > 0 || len(cfg.Models) > 0
 
 	ws := workspacePath(skillDir)
-	iter := nextIteration(ws)
-	if err := ensureDir(iterationPath(ws, iter)); err != nil {
-		return err
+
+	var iter int
+	var lock *IterationLock
+	if *resume {
+		var err error
+		iter, lock, err = findRunningIteration(ws)
+		if err != nil {
+			return fmt.Errorf("cannot resume: %w", err)
+		}
+		fmt.Printf("Resuming iteration %d\n", iter)
+	} else {
+		iter = nextIteration(ws)
+		lock = &IterationLock{
+			Iteration: iter,
+			Status:    "running",
+			Completed: []RunIdentity{},
+			StartedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		if err := ensureDir(iterationPath(ws, iter)); err != nil {
+			return err
+		}
+	}
+
+	lock.UpdatedAt = time.Now()
+	if err := writeLock(ws, lock); err != nil {
+		return fmt.Errorf("writing lock: %w", err)
 	}
 
 	// Resolve baseline
@@ -308,10 +334,12 @@ func cmdRun(args []string) error {
 
 		var jobs []runJob
 		for _, m := range models {
-			jobs = append(jobs,
-				runJob{eval, m.Key(), m.Agent, m.Model, "with_skill"},
-				runJob{eval, m.Key(), m.Agent, m.Model, "baseline"},
-			)
+			for _, config := range []string{"with_skill", "baseline"} {
+				if *resume && isCompleted(lock, eval.ID, m.Key(), config) {
+					continue
+				}
+				jobs = append(jobs, runJob{eval, m.Key(), m.Agent, m.Model, config})
+			}
 		}
 
 		results := make([]*RunResult, len(jobs))
@@ -346,8 +374,23 @@ func cmdRun(args []string) error {
 				return fmt.Errorf("eval %d %s/%s: %w", job.eval.ID, job.modelKey, job.config, errs[i])
 			}
 			r := results[i]
+			if !isCompleted(lock, job.eval.ID, job.modelKey, job.config) {
+				lock.Completed = append(lock.Completed, RunIdentity{EvalID: job.eval.ID, Model: job.modelKey, Config: job.config})
+			}
 			fmt.Printf("  %s/%-14s %s (%dms)\n", job.modelKey, job.config, r.Status, r.Timing.DurationMs)
 		}
+
+		lock.UpdatedAt = time.Now()
+		lock.Status = "running"
+		if err := writeLock(ws, lock); err != nil {
+			return fmt.Errorf("writing lock: %w", err)
+		}
+	}
+
+	lock.UpdatedAt = time.Now()
+	lock.Status = "complete"
+	if err := writeLock(ws, lock); err != nil {
+		return fmt.Errorf("writing final lock: %w", err)
 	}
 
 	fmt.Printf("\nDone. Results in %s\n", iterationPath(ws, iter))
@@ -391,6 +434,28 @@ func cmdGrade(args []string) error {
 	iter := nextIteration(ws) - 1
 	if iter < 1 {
 		return fmt.Errorf("no iterations found — run 'skill-eval run' first")
+	}
+
+	lock, err := readLock(ws, iter)
+	if err == nil && lock.Status == "running" {
+		var missing []string
+		for _, eval := range ef.Evals {
+			if *evalID >= 0 && eval.ID != *evalID {
+				continue
+			}
+			for _, m := range models {
+				for _, config := range []string{"with_skill", "baseline"} {
+					outputDir := filepath.Join(evalPath(ws, iter, eval.ID, m.Key()), config, "outputs")
+					if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+						missing = append(missing, fmt.Sprintf("eval-%d %s/%s", eval.ID, m.Key(), config))
+					}
+				}
+			}
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("iteration %d is still running (missing: %s); finish with 'skill-eval run --resume'", iter, strings.Join(missing, ", "))
+		}
+		return fmt.Errorf("iteration %d is still running; finish with 'skill-eval run --resume'", iter)
 	}
 
 	fmt.Printf("Grading iteration %d\n", iter)
@@ -570,6 +635,7 @@ func cmdLoop(args []string) error {
 	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs")
 	fixFlag := fs.Bool("fix", false, "Auto-refine failing evals")
 	maxFixAttempts := fs.Int("max-fix-attempts", 3, "Max fix attempts per eval")
+	resume := fs.Bool("resume", false, "Resume the latest running iteration")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -579,6 +645,9 @@ func cmdLoop(args []string) error {
 	runArgs := []string{"--baseline", *baselinePath}
 	if *modelsRaw != "" {
 		runArgs = append(runArgs, "--models", *modelsRaw)
+	}
+	if *resume {
+		runArgs = append(runArgs, "--resume")
 	}
 
 	fmt.Println("\n[1/3] Running evals...")

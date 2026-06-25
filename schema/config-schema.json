@@ -3,10 +3,12 @@
   "$id": "https://github.com/matt-riley/skill-evaluator/schema/config.json",
   "title": "Skill Evaluator Configuration",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "defaults": {
       "type": "object",
       "description": "Default agent runtime configuration for running evals.",
+      "additionalProperties": false,
       "properties": {
         "agent": {
           "type": "string",
@@ -23,6 +25,7 @@
     "judge": {
       "type": "object",
       "description": "Configuration for the grading judge.",
+      "additionalProperties": false,
       "properties": {
         "agent": {
           "type": "string",
@@ -33,6 +36,26 @@
           "type": "string",
           "description": "Model name for the judge (optional, defaults to run model if unset)."
         }
+      }
+    },
+    "models": {
+      "type": "array",
+      "description": "Explicit agent/model combinations to run evals against.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "Agent runtime CLI name.",
+            "enum": ["pi", "claude", "copilot", "codex"]
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name to pass to the agent (optional, uses agent default if unset)."
+          }
+        },
+        "required": ["agent"]
       }
     }
   }

@@ -19,3 +19,5 @@ judge:
 **📁 Per-skill** (`.skill-eval.yaml`): Drop this in your skill root to override global defaults!
 
 Supported agents: `pi`, `claude`, `copilot`, `codex`.
+
+Configs are validated against [`schema/config-schema.json`](https://github.com/matt-riley/skill-evaluator/blob/main/schema/config-schema.json) on load. Invalid files fail immediately with a clear error rather than being silently ignored.

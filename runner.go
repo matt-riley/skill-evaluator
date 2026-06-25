@@ -14,8 +14,8 @@ import (
 )
 
 // runEval executes one eval (with-skill or baseline) and returns the result.
-func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, workspace string, iteration int, configLabel string, baselinePath string) (*RunResult, error) {
-	evalDir := evalPath(workspace, iteration, eval.ID)
+func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, workspace string, iteration int, modelKey string, configLabel string, baselinePath string) (*RunResult, error) {
+	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	outDir := filepath.Join(evalDir, configLabel, "outputs")
 	if err := ensureDir(outDir); err != nil {
 		return nil, err
@@ -23,6 +23,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 
 	result := &RunResult{
 		EvalID: eval.ID,
+		Model:  modelKey,
 		Config: configLabel,
 		Status: "ok",
 	}
@@ -217,9 +218,9 @@ func buildFixPrompt(skillPath string, eval Eval, outDir string, critique string)
 // It re-runs the agent with critique from failed assertions until all pass,
 // the score plateaus, or maxAttempts is exhausted.
 func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
-	workspace string, iteration int, baselinePath string, maxAttempts int) (*FixResult, error) {
+	workspace string, iteration int, modelKey string, baselinePath string, maxAttempts int) (*FixResult, error) {
 
-	evalDir := evalPath(workspace, iteration, eval.ID)
+	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	gradingPath := filepath.Join(evalDir, "with_skill", "grading.json")
 
 	// Load initial grading
@@ -270,7 +271,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		_ = os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644)
 
 		// Grade this fix attempt
-		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, attempt)
+		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, modelKey, attempt)
 		if err != nil {
 			// Can't grade — stop fixing, keep previous best
 			break

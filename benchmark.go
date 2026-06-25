@@ -10,6 +10,62 @@ import (
 
 // computeBenchmark aggregates run results into a benchmark.json.
 func computeBenchmark(results []*RunResult, workspace string, iteration int) error {
+	// Group results by model
+	byModel := map[string][]*RunResult{}
+	for _, r := range results {
+		mk := r.Model
+		if mk == "" {
+			mk = "_" // legacy single-model
+		}
+		byModel[mk] = append(byModel[mk], r)
+	}
+
+	bf := BenchmarkFile{
+		GeneratedAt: time.Now(),
+	}
+
+	if len(byModel) == 1 {
+		// Single model (or legacy) — use flat summary format
+		for _, rs := range byModel {
+			bf.RunSummary.WithSkill, bf.RunSummary.Baseline = splitAndAggregate(rs)
+			bf.RunSummary.Delta.PassRate = bf.RunSummary.WithSkill.PassRate.Mean - bf.RunSummary.Baseline.PassRate.Mean
+			bf.RunSummary.Delta.TimeSeconds = bf.RunSummary.WithSkill.TimeSeconds.Mean - bf.RunSummary.Baseline.TimeSeconds.Mean
+			bf.RunSummary.Delta.Tokens = bf.RunSummary.WithSkill.Tokens.Mean - bf.RunSummary.Baseline.Tokens.Mean
+		}
+	} else {
+		// Multi-model — use models map
+		bf.Models = map[string]ModelBenchmark{}
+		bestDelta := -999.0
+		worstDelta := 999.0
+		for mk, rs := range byModel {
+			ws, bs := splitAndAggregate(rs)
+			mb := ModelBenchmark{WithSkill: ws, Baseline: bs}
+			mb.Delta.PassRate = ws.PassRate.Mean - bs.PassRate.Mean
+			mb.Delta.TimeSeconds = ws.TimeSeconds.Mean - bs.TimeSeconds.Mean
+			mb.Delta.Tokens = ws.Tokens.Mean - bs.Tokens.Mean
+			bf.Models[mk] = mb
+
+			if mb.Delta.PassRate > bestDelta {
+				bestDelta = mb.Delta.PassRate
+				bf.BestModel = mk
+			}
+			if mb.Delta.PassRate < worstDelta {
+				worstDelta = mb.Delta.PassRate
+				bf.WorstModel = mk
+			}
+		}
+	}
+
+	path := fmt.Sprintf("%s/benchmark.json", iterationPath(workspace, iteration))
+	data, err := json.MarshalIndent(bf, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+// splitAndAggregate splits results into with_skill and baseline, then aggregates each.
+func splitAndAggregate(results []*RunResult) (RunSummary, RunSummary) {
 	var withSkill, baseline []*RunResult
 	for _, r := range results {
 		switch r.Config {
@@ -19,25 +75,7 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 			baseline = append(baseline, r)
 		}
 	}
-
-	ws := aggregateRuns(withSkill)
-	bs := aggregateRuns(baseline)
-
-	bf := BenchmarkFile{
-		GeneratedAt: time.Now(),
-	}
-	bf.RunSummary.WithSkill = ws
-	bf.RunSummary.Baseline = bs
-	bf.RunSummary.Delta.PassRate = ws.PassRate.Mean - bs.PassRate.Mean
-	bf.RunSummary.Delta.TimeSeconds = ws.TimeSeconds.Mean - bs.TimeSeconds.Mean
-	bf.RunSummary.Delta.Tokens = ws.Tokens.Mean - bs.Tokens.Mean
-
-	path := fmt.Sprintf("%s/benchmark.json", iterationPath(workspace, iteration))
-	data, err := json.MarshalIndent(bf, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
+	return aggregateRuns(withSkill), aggregateRuns(baseline)
 }
 
 // aggregateRuns computes mean and stddev across run results.

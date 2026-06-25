@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,6 +13,7 @@ import (
 type Config struct {
 	Defaults DefaultsConfig `yaml:"defaults"`
 	Judge    JudgeConfig    `yaml:"judge"`
+	Models   []ModelConfig  `yaml:"models,omitempty"`
 }
 
 // DefaultsConfig is the default agent + model for running evals.
@@ -24,6 +26,12 @@ type DefaultsConfig struct {
 type JudgeConfig struct {
 	Agent string `yaml:"agent"`
 	Model string `yaml:"model"`
+}
+
+// ModelConfig specifies an agent + optional model for a run configuration.
+type ModelConfig struct {
+	Agent string `yaml:"agent"`
+	Model string `yaml:"model,omitempty"`
 }
 
 // LoadConfig loads config from global then skill-level, merging.
@@ -76,4 +84,26 @@ func mergeConfig(dst, src *Config) {
 	if src.Judge.Model != "" {
 		dst.Judge.Model = src.Judge.Model
 	}
+	if len(src.Models) > 0 {
+		dst.Models = src.Models
+	}
+}
+
+// modelKey returns a kebab-cased key for a ModelConfig.
+func (m ModelConfig) Key() string {
+	if m.Model != "" {
+		return strings.ReplaceAll(m.Agent+"-"+m.Model, " ", "-")
+	}
+	return m.Agent
+}
+
+// resolveModels returns the models to run against, defaulting to config defaults.
+func resolveModels(cfg *Config, cliModels []ModelConfig) []ModelConfig {
+	if len(cliModels) > 0 {
+		return cliModels
+	}
+	if len(cfg.Models) > 0 {
+		return cfg.Models
+	}
+	return []ModelConfig{{Agent: cfg.Defaults.Agent, Model: cfg.Defaults.Model}}
 }

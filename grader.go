@@ -11,8 +11,8 @@ import (
 )
 
 // gradeEval shells out to the judge agent to grade assertions against outputs.
-func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, configLabel string) (*GradingFile, error) {
-	evalDir := evalPath(workspace, iteration, eval.ID)
+func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, configLabel string) (*GradingFile, error) {
+	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	outDir := filepath.Join(evalDir, configLabel, "outputs")
 	gradingPath := filepath.Join(evalDir, configLabel, "grading.json")
 
@@ -190,8 +190,8 @@ func extractFailedReasoning(gf *GradingFile) string {
 }
 
 // gradeFixAttempt grades a fix attempt's outputs.
-func gradeFixAttempt(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, attempt int) (*GradingFile, error) {
-	evalDir := evalPath(workspace, iteration, eval.ID)
+func gradeFixAttempt(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, attempt int) (*GradingFile, error) {
+	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	fixDir := filepath.Join(evalDir, "with_skill", fmt.Sprintf("fix-%d", attempt))
 	outDir := filepath.Join(fixDir, "outputs")
 

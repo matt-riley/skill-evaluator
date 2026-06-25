@@ -47,6 +47,7 @@ type GradingSummary struct {
 // RunResult captures the outcome of a single run (with-skill or baseline).
 type RunResult struct {
 	EvalID  int
+	Model   string // model key (e.g. "pi-claude-sonnet"), empty for single-model compat
 	Config  string // "with_skill" or "baseline"
 	Status  string // "ok" or "failed"
 	ErrMsg  string
@@ -83,6 +84,17 @@ type FixResult struct {
 	Converged bool         `json:"converged"`
 }
 
+// ModelBenchmark holds per-model aggregated stats.
+type ModelBenchmark struct {
+	WithSkill RunSummary `json:"with_skill"`
+	Baseline  RunSummary `json:"baseline"`
+	Delta     struct {
+		PassRate    float64 `json:"pass_rate"`
+		TimeSeconds float64 `json:"time_seconds"`
+		Tokens      float64 `json:"tokens"`
+	} `json:"delta"`
+}
+
 // BenchmarkFile is written to benchmark.json.
 type BenchmarkFile struct {
 	RunSummary struct {
@@ -93,6 +105,9 @@ type BenchmarkFile struct {
 			TimeSeconds float64 `json:"time_seconds"`
 			Tokens      float64 `json:"tokens"`
 		} `json:"delta"`
-	} `json:"run_summary"`
-	GeneratedAt time.Time `json:"generated_at"`
+	} `json:"run_summary,omitempty"`
+	Models      map[string]ModelBenchmark `json:"models,omitempty"`
+	BestModel   string                    `json:"best_model,omitempty"`
+	WorstModel  string                    `json:"worst_model,omitempty"`
+	GeneratedAt time.Time                 `json:"generated_at"`
 }

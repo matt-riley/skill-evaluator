@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func main() {
@@ -63,6 +64,7 @@ Flags:
   --global                    For init: create global config
   --fix                       (loop) Auto-refine failing evals up to --max-fix-attempts
   --max-fix-attempts <n>      Max fix attempts per eval (default: 3, with --fix)
+  --models <a:m,a:m,...>      Run against multiple agent:model pairs (e.g. pi:claude-sonnet,claude)
 
 Config:
   ~/.config/skill-eval/config.yaml   Global defaults
@@ -71,6 +73,26 @@ Config:
 }
 
 // --- helpers ---
+
+// parseModels parses a comma-separated list of agent:model pairs.
+func parseModels(raw string) ([]ModelConfig, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	var models []ModelConfig
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		agent, model, _ := strings.Cut(part, ":")
+		models = append(models, ModelConfig{Agent: strings.TrimSpace(agent), Model: strings.TrimSpace(model)})
+	}
+	if len(models) == 0 {
+		return nil, fmt.Errorf("invalid --models value: %q", raw)
+	}
+	return models, nil
+}
 
 // --- init ---
 
@@ -173,10 +195,16 @@ func cmdRun(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	baselineFlag := fs.String("baseline", "none", "Baseline for runs")
 	evalID := fs.Int("eval", -1, "Run a single eval by ID")
+	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs (e.g. pi:claude-sonnet,claude)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	baselinePath := *baselineFlag
+
+	cliModels, err := parseModels(*modelsRaw)
+	if err != nil {
+		return err
+	}
 
 	skillDir, err := detectSkillDir()
 	if err != nil {
@@ -193,13 +221,14 @@ func cmdRun(args []string) error {
 		return err
 	}
 
+	models := resolveModels(cfg, cliModels)
+	multiModel := len(cliModels) > 0 || len(cfg.Models) > 0
+
 	ws := workspacePath(skillDir)
 	iter := nextIteration(ws)
 	if err := ensureDir(iterationPath(ws, iter)); err != nil {
 		return err
 	}
-
-	fmt.Printf("Iteration %d — %d evals\n", iter, len(ef.Evals))
 
 	// Resolve baseline
 	if baselinePath == "previous" {
@@ -215,30 +244,92 @@ func cmdRun(args []string) error {
 		fmt.Printf("Snapshotted skill as baseline: %s\n", snapshotPath)
 	}
 
+	// Count total runs for cost warning
+	evalCount := 0
+	for _, eval := range ef.Evals {
+		if *evalID >= 0 && eval.ID != *evalID {
+			continue
+		}
+		evalCount++
+	}
+	totalRuns := evalCount * len(models) * 2 // 2 configs per model
+	if totalRuns > 10 && multiModel {
+		fmt.Printf("⚠️  This will run %d agent invocations (%d evals × %d models × 2 configs).\n", totalRuns, evalCount, len(models))
+		fmt.Print("Continue? [y/N]: ")
+		var answer string
+		_, _ = fmt.Scanln(&answer)
+		if strings.ToLower(strings.TrimSpace(answer)) != "y" {
+			return fmt.Errorf("aborted")
+		}
+	}
+
+	modelNames := make([]string, len(models))
+	for i, m := range models {
+		modelNames[i] = m.Key()
+	}
+
+	fmt.Printf("Iteration %d — %d evals × %d model(s)\n", iter, evalCount, len(models))
+
 	ctx := context.Background()
+
+	// Batch size: 2 concurrent runs
+	sem := make(chan struct{}, 2)
+	type runJob struct {
+		eval      Eval
+		modelKey  string
+		agent     string
+		model     string
+		config    string
+	}
 
 	for _, eval := range ef.Evals {
 		if *evalID >= 0 && eval.ID != *evalID {
 			continue
 		}
-
 		fmt.Printf("\nEval %d: %s\n", eval.ID, truncate(eval.Prompt, 80))
 
-		// With-skill run
-		fmt.Print("  with_skill... ")
-		r, err := runEval(ctx, cfg, skillDir, eval, ws, iter, "with_skill", baselinePath)
-		if err != nil {
-			return fmt.Errorf("eval %d with_skill: %w", eval.ID, err)
+		var jobs []runJob
+		for _, m := range models {
+			jobs = append(jobs,
+				runJob{eval, m.Key(), m.Agent, m.Model, "with_skill"},
+				runJob{eval, m.Key(), m.Agent, m.Model, "baseline"},
+			)
 		}
-		fmt.Printf("%s (%dms)\n", r.Status, r.Timing.DurationMs)
 
-		// Baseline run
-		fmt.Print("  baseline... ")
-		r, err = runEval(ctx, cfg, skillDir, eval, ws, iter, "baseline", baselinePath)
-		if err != nil {
-			return fmt.Errorf("eval %d baseline: %w", eval.ID, err)
+		results := make([]*RunResult, len(jobs))
+		errs := make([]error, len(jobs))
+		var wg sync.WaitGroup
+
+		for i, job := range jobs {
+			wg.Add(1)
+			go func(idx int, j runJob) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+
+				// Build model-specific config
+				runCfg := &Config{
+					Defaults: DefaultsConfig{Agent: j.agent, Model: j.model},
+					Judge:    cfg.Judge,
+				}
+				if runCfg.Defaults.Model == "" {
+					runCfg.Defaults.Model = cfg.Defaults.Model
+				}
+
+				r, err := runEval(ctx, runCfg, skillDir, j.eval, ws, iter, j.modelKey, j.config, baselinePath)
+				results[idx] = r
+				errs[idx] = err
+			}(i, job)
 		}
-		fmt.Printf("%s (%dms)\n", r.Status, r.Timing.DurationMs)
+		wg.Wait()
+
+		for i, job := range jobs {
+			if errs[i] != nil {
+				return fmt.Errorf("eval %d %s/%s: %w", job.eval.ID, job.modelKey, job.config, errs[i])
+			}
+			r := results[i]
+			fmt.Printf("  %s/%-14s %s (%dms)\n", job.modelKey, job.config, r.Status, r.Timing.DurationMs)
+		}
 	}
 
 	fmt.Printf("\nDone. Results in %s\n", iterationPath(ws, iter))
@@ -251,7 +342,13 @@ func cmdGrade(args []string) error {
 	fs := flag.NewFlagSet("grade", flag.ContinueOnError)
 	doBenchmark := fs.Bool("benchmark", false, "Compute benchmark after grading")
 	evalID := fs.Int("eval", -1, "Grade a single eval by ID")
+	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	cliModels, err := parseModels(*modelsRaw)
+	if err != nil {
 		return err
 	}
 
@@ -269,6 +366,8 @@ func cmdGrade(args []string) error {
 	if err != nil {
 		return err
 	}
+
+	models := resolveModels(cfg, cliModels)
 
 	ws := workspacePath(skillDir)
 	iter := nextIteration(ws) - 1
@@ -286,27 +385,53 @@ func cmdGrade(args []string) error {
 			continue
 		}
 
-		for _, config := range []string{"with_skill", "baseline"} {
-			evalDir := evalPath(ws, iter, eval.ID)
-			outputDir := filepath.Join(evalDir, config, "outputs")
+		for _, m := range models {
+			mk := m.Key()
+			for _, config := range []string{"with_skill", "baseline"} {
+				evalDir := evalPath(ws, iter, eval.ID, mk)
+				outputDir := filepath.Join(evalDir, config, "outputs")
 
-			if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-				fmt.Printf("  eval %d %s: no outputs, skipping\n", eval.ID, config)
-				continue
-			}
+				if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+					// Fall back to legacy (no model key) path for single-model backward compat
+					if mk == m.Agent && len(models) == 1 {
+						legacyDir := evalPath(ws, iter, eval.ID, "")
+						legacyOutput := filepath.Join(legacyDir, config, "outputs")
+						if _, err := os.Stat(legacyOutput); os.IsNotExist(err) {
+							fmt.Printf("  eval %d %s/%s: no outputs, skipping\n", eval.ID, mk, config)
+							continue
+						}
+						// Use legacy path
+						gf, err := gradeEval(ctx, cfg, eval, ws, iter, "", config)
+						if err != nil {
+							fmt.Printf("error: %v\n", err)
+							continue
+						}
+						fmt.Printf("  eval %d %s... %d/%d passed\n", eval.ID, config, gf.Summary.Passed, gf.Summary.Total)
+						results = append(results, &RunResult{
+							EvalID:  eval.ID,
+							Config:  config,
+							Grading: gf,
+						})
+						continue
+					}
+					fmt.Printf("  eval %d %s/%s: no outputs, skipping\n", eval.ID, mk, config)
+					continue
+				}
 
-			fmt.Printf("  eval %d %s... ", eval.ID, config)
-			gf, err := gradeEval(ctx, cfg, eval, ws, iter, config)
-			if err != nil {
-				fmt.Printf("error: %v\n", err)
-				continue
+				fmt.Printf("  eval %d %s/%s... ", eval.ID, mk, config)
+				gf, err := gradeEval(ctx, cfg, eval, ws, iter, mk, config)
+				if err != nil {
+					fmt.Printf("error: %v\n", err)
+					continue
+				}
+				fmt.Printf("%d/%d passed\n", gf.Summary.Passed, gf.Summary.Total)
+				results = append(results, &RunResult{
+					EvalID:  eval.ID,
+					Model:   mk,
+					Config:  config,
+					Grading: gf,
+				})
 			}
-			fmt.Printf("%d/%d passed\n", gf.Summary.Passed, gf.Summary.Total)
-			results = append(results, &RunResult{
-				EvalID:  eval.ID,
-				Config:  config,
-				Grading: gf,
-			})
 		}
 	}
 
@@ -330,7 +455,7 @@ func cmdBenchmark(args []string) error {
 		return fmt.Errorf("no iterations found")
 	}
 
-	// Collect grading results from all evals
+	// Collect grading results from all evals, auto-detecting model vs single-model layout
 	var results []*RunResult
 	entries, err := os.ReadDir(iterationPath(ws, iter))
 	if err != nil {
@@ -342,29 +467,75 @@ func cmdBenchmark(args []string) error {
 			continue
 		}
 		evalID, _ := strconv.Atoi(strings.TrimPrefix(e.Name(), "eval-"))
+		evalPath := filepath.Join(iterationPath(ws, iter), e.Name())
 
-		for _, config := range []string{"with_skill", "baseline"} {
-			gradingPath := filepath.Join(iterationPath(ws, iter), e.Name(), config, "grading.json")
-			data, err := os.ReadFile(gradingPath)
-			if err != nil {
-				continue
+		// Check if this eval has model subdirectories or legacy flat layout
+		modelDirs, _ := os.ReadDir(evalPath)
+		hasModels := false
+		for _, m := range modelDirs {
+			if m.IsDir() && m.Name() != "with_skill" && m.Name() != "baseline" {
+				hasModels = true
+				break
 			}
-			var gf GradingFile
-			if err := json.Unmarshal(data, &gf); err != nil {
-				continue
-			}
-			results = append(results, &RunResult{
-				EvalID:  evalID,
-				Config:  config,
-				Grading: &gf,
-			})
+		}
 
-			// Also load timing
-			timingPath := filepath.Join(iterationPath(ws, iter), e.Name(), config, "timing.json")
-			if td, err := os.ReadFile(timingPath); err == nil {
-				var t TimingData
-				if json.Unmarshal(td, &t) == nil {
-					results[len(results)-1].Timing = &t
+		if hasModels {
+			// Multi-model layout: eval-N/{modelKey}/{config}/
+			for _, m := range modelDirs {
+				if !m.IsDir() {
+					continue
+				}
+				modelKey := m.Name()
+				for _, config := range []string{"with_skill", "baseline"} {
+					gradingPath := filepath.Join(evalPath, modelKey, config, "grading.json")
+					data, err := os.ReadFile(gradingPath)
+					if err != nil {
+						continue
+					}
+					var gf GradingFile
+					if err := json.Unmarshal(data, &gf); err != nil {
+						continue
+					}
+					results = append(results, &RunResult{
+						EvalID:  evalID,
+						Model:   modelKey,
+						Config:  config,
+						Grading: &gf,
+					})
+
+					timingPath := filepath.Join(evalPath, modelKey, config, "timing.json")
+					if td, err := os.ReadFile(timingPath); err == nil {
+						var t TimingData
+						if json.Unmarshal(td, &t) == nil {
+							results[len(results)-1].Timing = &t
+						}
+					}
+				}
+			}
+		} else {
+			// Legacy single-model layout: eval-N/{config}/
+			for _, config := range []string{"with_skill", "baseline"} {
+				gradingPath := filepath.Join(evalPath, config, "grading.json")
+				data, err := os.ReadFile(gradingPath)
+				if err != nil {
+					continue
+				}
+				var gf GradingFile
+				if err := json.Unmarshal(data, &gf); err != nil {
+					continue
+				}
+				results = append(results, &RunResult{
+					EvalID:  evalID,
+					Config:  config,
+					Grading: &gf,
+				})
+
+				timingPath := filepath.Join(evalPath, config, "timing.json")
+				if td, err := os.ReadFile(timingPath); err == nil {
+					var t TimingData
+					if json.Unmarshal(td, &t) == nil {
+						results[len(results)-1].Timing = &t
+					}
 				}
 			}
 		}
@@ -378,6 +549,7 @@ func cmdBenchmark(args []string) error {
 func cmdLoop(args []string) error {
 	fs := flag.NewFlagSet("loop", flag.ContinueOnError)
 	baselinePath := fs.String("baseline", "none", "Baseline for runs")
+	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs")
 	fixFlag := fs.Bool("fix", false, "Auto-refine failing evals")
 	maxFixAttempts := fs.Int("max-fix-attempts", 3, "Max fix attempts per eval")
 	if err := fs.Parse(args); err != nil {
@@ -387,21 +559,28 @@ func cmdLoop(args []string) error {
 	fmt.Println("=== skill-eval loop ===")
 
 	runArgs := []string{"--baseline", *baselinePath}
+	if *modelsRaw != "" {
+		runArgs = append(runArgs, "--models", *modelsRaw)
+	}
 
 	fmt.Println("\n[1/3] Running evals...")
 	if err := cmdRun(runArgs); err != nil {
 		return fmt.Errorf("run phase: %w", err)
 	}
 
+	gradeArgs := []string{}
+	if *modelsRaw != "" {
+		gradeArgs = append(gradeArgs, "--models", *modelsRaw)
+	}
+
 	fmt.Println("\n[2/3] Grading...")
-	if err := cmdGrade(nil); err != nil {
+	if err := cmdGrade(gradeArgs); err != nil {
 		return fmt.Errorf("grade phase: %w", err)
 	}
 
-	// Fix phase (only when --fix is set)
 	if *fixFlag {
 		fmt.Println("\n[3/4] Auto-fixing failed evals...")
-		if err := runFixPhase(*maxFixAttempts); err != nil {
+		if err := runFixPhase(*modelsRaw, *maxFixAttempts); err != nil {
 			return fmt.Errorf("fix phase: %w", err)
 		}
 	} else {
@@ -422,9 +601,12 @@ func cmdLoop(args []string) error {
 	return nil
 }
 
-// runFixPhase loads the current iteration's results and auto-refines each
-// failing with-skill eval up to maxAttempts.
-func runFixPhase(maxAttempts int) error {
+func runFixPhase(modelsRaw string, maxAttempts int) error {
+	cliModels, err := parseModels(modelsRaw)
+	if err != nil {
+		return err
+	}
+
 	skillDir, err := detectSkillDir()
 	if err != nil {
 		return err
@@ -440,6 +622,8 @@ func runFixPhase(maxAttempts int) error {
 		return err
 	}
 
+	models := resolveModels(cfg, cliModels)
+
 	ws := workspacePath(skillDir)
 	iter := nextIteration(ws) - 1
 	if iter < 1 {
@@ -449,45 +633,48 @@ func runFixPhase(maxAttempts int) error {
 	ctx := context.Background()
 
 	for _, eval := range ef.Evals {
-		gradingPath := filepath.Join(evalPath(ws, iter, eval.ID), "with_skill", "grading.json")
-		data, err := os.ReadFile(gradingPath)
-		if err != nil {
-			fmt.Printf("  eval %d: no grading, skipping\n", eval.ID)
-			continue
-		}
-		var gf GradingFile
-		if err := json.Unmarshal(data, &gf); err != nil {
-			fmt.Printf("  eval %d: invalid grading, skipping\n", eval.ID)
-			continue
-		}
-
-		if gf.Summary.Failed == 0 {
-			fmt.Printf("  eval %d: already passing, skipping\n", eval.ID)
-			continue
-		}
-
-		fmt.Printf("  eval %d: %d/%d failed — fixing...\n", eval.ID, gf.Summary.Failed, gf.Summary.Total)
-
-		fr, err := fixEval(ctx, cfg, skillDir, eval, ws, iter, "", maxAttempts)
-		if err != nil {
-			fmt.Printf("    fix error: %v\n", err)
-			continue
-		}
-
-		for _, a := range fr.Attempts {
-			status := ""
-			if a.Grading.Summary.Failed == 0 {
-				status = " ✓"
+		for _, m := range models {
+			mk := m.Key()
+			gradingPath := filepath.Join(evalPath(ws, iter, eval.ID, mk), "with_skill", "grading.json")
+			data, err := os.ReadFile(gradingPath)
+			if err != nil {
+				fmt.Printf("  eval %d/%s: no grading, skipping\n", eval.ID, mk)
+				continue
 			}
-			fmt.Printf("    attempt %d: %d/%d passed%s\n",
-				a.Attempt, a.Grading.Summary.Passed, a.Grading.Summary.Total, status)
-		}
+			var gf GradingFile
+			if err := json.Unmarshal(data, &gf); err != nil {
+				fmt.Printf("  eval %d/%s: invalid grading, skipping\n", eval.ID, mk)
+				continue
+			}
 
-		if fr.Converged {
-			fmt.Printf("    (plateaued at attempt %d)\n", len(fr.Attempts))
+			if gf.Summary.Failed == 0 {
+				fmt.Printf("  eval %d/%s: already passing, skipping\n", eval.ID, mk)
+				continue
+			}
+
+			fmt.Printf("  eval %d/%s: %d/%d failed — fixing...\n", eval.ID, mk, gf.Summary.Failed, gf.Summary.Total)
+
+			fr, err := fixEval(ctx, cfg, skillDir, eval, ws, iter, mk, "", maxAttempts)
+			if err != nil {
+				fmt.Printf("    fix error: %v\n", err)
+				continue
+			}
+
+			for _, a := range fr.Attempts {
+				status := ""
+				if a.Grading.Summary.Failed == 0 {
+					status = " ✓"
+				}
+				fmt.Printf("    attempt %d: %d/%d passed%s\n",
+					a.Attempt, a.Grading.Summary.Passed, a.Grading.Summary.Total, status)
+			}
+
+			if fr.Converged {
+				fmt.Printf("    (plateaued at attempt %d)\n", len(fr.Attempts))
+			}
+			fmt.Printf("    best: attempt %d (%.0f%% pass)\n", fr.BestFix+1,
+				fr.Attempts[fr.BestFix].Grading.Summary.PassRate*100)
 		}
-		fmt.Printf("    best: attempt %d (%.0f%% pass)\n", fr.BestFix+1,
-			fr.Attempts[fr.BestFix].Grading.Summary.PassRate*100)
 	}
 
 	return nil

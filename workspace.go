@@ -19,8 +19,13 @@ func iterationPath(workspace string, n int) string {
 }
 
 // evalPath returns the path for an eval within an iteration.
-func evalPath(workspace string, iteration int, evalID int) string {
-	return filepath.Join(iterationPath(workspace, iteration), fmt.Sprintf("eval-%d", evalID))
+// If modelKey is non-empty, it nests under the model directory.
+func evalPath(workspace string, iteration int, evalID int, modelKey string) string {
+	base := filepath.Join(iterationPath(workspace, iteration), fmt.Sprintf("eval-%d", evalID))
+	if modelKey != "" {
+		return filepath.Join(base, modelKey)
+	}
+	return base
 }
 
 // ensureDir creates a directory and all parents.

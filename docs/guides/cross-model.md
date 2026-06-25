@@ -21,7 +21,7 @@ skill-eval loop --models pi:claude-sonnet,claude,copilot
 
 skill-eval runs the full `run → grade → benchmark` cycle for each model. Each one gets its own with-skill and baseline run, and the results land side-by-side in `benchmark.json`.
 
-![Cross-model benchmarking](/guides/cross-model.mp4)
+<video src="/guides/cross-model.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" />
 
 ---
 

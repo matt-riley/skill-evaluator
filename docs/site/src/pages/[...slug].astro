@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { buildNavLinks, cleanPath, EXCLUDED_DOCS, GITHUB_URL } from '../utils/routing';
+import { buildNavLinks, cleanPath, EXCLUDED_DOCS, extractDescription, GITHUB_URL } from '../utils/routing';
 
 export async function getStaticPaths() {
   const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
@@ -37,8 +37,9 @@ const adrLinks = navLinks.filter(link => link.isAdr);
 const changelogLink = navLinks.find(link => link.path === 'changelog');
 
 const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' : currentSlug);
+const description = doc.frontmatter?.description || extractDescription(typeof doc.rawContent === 'function' ? doc.rawContent() : '');
 ---
-<Layout title={pageTitle}>
+<Layout title={pageTitle} description={description}>
   <div class="flex min-h-screen text-black font-sans selection:bg-neo-pink selection:text-white">
     <!-- Sidebar -->
     <aside class="w-80 bg-neo-yellow border-r-4 border-black p-6 hidden md:flex flex-col shrink-0 overflow-y-auto h-screen sticky top-0 z-20">
@@ -56,7 +57,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
             {normalLinks.map(link => (
               <li>
                 <a
-                  href={`/${link.path === 'readme' ? '' : link.path}`}
+                  href={`/${link.path === 'readme' ? '' : `${link.path}/`}`}
                   class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
                     link.path === currentSlug
                       ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
@@ -79,7 +80,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
             {adrLinks.map(link => (
               <li>
                 <a
-                  href={`/${link.path}`}
+                  href={`/${link.path}/`}
                   class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold truncate border-4 border-black ${
                     link.path === currentSlug
                       ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1'
@@ -96,7 +97,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
 
         {changelogLink && (
           <a
-            href={`/${changelogLink.path}`}
+            href={`/${changelogLink.path}/`}
             class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
               changelogLink.path === currentSlug
                 ? 'bg-neo-purple text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
@@ -152,7 +153,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
               {normalLinks.map(link => (
                 <li>
                   <a
-                    href={`/${link.path === 'readme' ? '' : link.path}`}
+                    href={`/${link.path === 'readme' ? '' : `${link.path}/`}`}
                     class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
                       link.path === currentSlug
                         ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
@@ -175,7 +176,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
               {adrLinks.map(link => (
                 <li>
                   <a
-                    href={`/${link.path}`}
+                    href={`/${link.path}/`}
                     class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold truncate border-4 border-black ${
                       link.path === currentSlug
                         ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1'
@@ -192,7 +193,7 @@ const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' :
 
           {changelogLink && (
             <a
-              href={`/${changelogLink.path}`}
+              href={`/${changelogLink.path}/`}
               class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
                 changelogLink.path === currentSlug
                   ? 'bg-neo-purple text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'

@@ -54,7 +54,7 @@ describe("Doc pages", () => {
 
   test("README page title is Home", () => {
     const html = readDist("index.html");
-    expect(html).toContain("<title>Home</title>");
+    expect(html).toContain("<title>Home | Skill Evaluator Documentation</title>");
   });
 
   test("mobile menu toggle exists in built output", () => {

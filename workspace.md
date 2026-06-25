@@ -1,3 +1,8 @@
+---
+title: Workspace
+description: Understand the skill-evaluator workspace layout, including the evals directory, per-iteration result folders, and generated benchmark artifacts.
+---
+
 # 📂 Workspace Structure
 
 Here's how your files will be organized:

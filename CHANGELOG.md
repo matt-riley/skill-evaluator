@@ -1,3 +1,8 @@
+---
+title: Changelog
+description: Changelog for skill-evaluator, listing releases and notable changes to the CLI, configuration, documentation site, and build tooling.
+---
+
 # Changelog
 
 ## [0.3.0](https://github.com/matt-riley/skill-evaluator/compare/v0.2.0...v0.3.0) (2026-06-25)

@@ -1,3 +1,8 @@
+---
+title: Commands
+description: Learn the skill-evaluator CLI commands including init, run, grade, benchmark, and loop, plus the flags that control baselines and single-eval runs.
+---
+
 # 🛠️ Handy Subcommands
 
 | Command | What it does |

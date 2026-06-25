@@ -1,11 +1,39 @@
 ---
 import '../styles/global.css';
+import Seo from '@jdevalk/astro-seo-graph/Seo.astro';
 
 interface Props {
   title: string;
+  description?: string;
+  noindex?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
+
+const siteUrl = 'https://skilleval.mattriley.tools';
+const canonicalUrl = Astro.url.href;
+const defaultDescription = 'Documentation for skill-evaluator, a CLI tool for automating eval-driven skill iteration.';
+const pageDescription = description || defaultDescription;
+
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      url: siteUrl,
+      name: 'Skill Eval',
+    },
+    {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+      url: canonicalUrl,
+      name: title,
+      description: pageDescription,
+      isPartOf: { '@id': `${siteUrl}/#website` },
+    },
+  ],
+};
 
 const csp = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 ---
@@ -17,8 +45,23 @@ const csp = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Security-Policy" content={csp} />
-    <title>{title}</title>
-    
+
+    <Seo
+      title={title}
+      titleTemplate="%s | Skill Evaluator Documentation"
+      description={pageDescription}
+      canonical={canonicalUrl}
+      siteName="Skill Eval"
+      ogType="website"
+      ogImage={`${siteUrl}/og-image.png`}
+      ogImageAlt="Skill Eval Documentation"
+      ogImageWidth={1200}
+      ogImageHeight={675}
+      noindex={noindex}
+      graph={graph}
+      extraLinks={[{ rel: 'sitemap', type: 'application/xml', href: '/sitemap-index.xml' }]}
+    />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" media="print" onload="this.media='all'">

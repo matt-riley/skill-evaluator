@@ -55,6 +55,21 @@ export function buildNavLinks(keys: string[]) {
   });
 }
 
+export function extractDescription(raw: string): string {
+  const paragraph = raw
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0 && !line.startsWith("#"));
+  if (!paragraph) return "";
+
+  const plain = paragraph
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[_*`]/g, "")
+    .replace(/<[^>]+>/g, "");
+  return plain.length > 160 ? `${plain.slice(0, 157)}...` : plain;
+}
+
 export const GITHUB_URL = "https://github.com/matt-riley/skill-evaluator";
 
 /** File names (lowercase) excluded from the documentation nav — agent instruction files. */

@@ -1,3 +1,8 @@
+---
+title: Eval Workflow
+description: Learn the skill-evaluator workflow, from writing eval prompts and assertions to running agent tasks, grading outputs with an LLM judge, and iterating.
+---
+
 # 🎢 Your Eval Workflow
 
 ### 1. Design your test cases 🎨

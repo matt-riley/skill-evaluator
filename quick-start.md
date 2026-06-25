@@ -1,3 +1,8 @@
+---
+title: Quick Start
+description: Get started with skill-evaluator by installing the CLI, scaffolding your first skill, defining evals, and running with-skill versus baseline comparisons.
+---
+
 # 🌟 Quick Start
 
 Getting started is a breeze. Just run these commands:

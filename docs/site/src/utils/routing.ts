@@ -6,8 +6,8 @@ export function cleanPath(key: string): string {
 }
 
 const DOC_ORDER = [
-  "quick-start",
   "readme",
+  "quick-start",
   "eval-workflow",
   "commands",
   "configuration",

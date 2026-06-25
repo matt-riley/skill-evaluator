@@ -275,11 +275,11 @@ func cmdRun(args []string) error {
 	// Batch size: 2 concurrent runs
 	sem := make(chan struct{}, 2)
 	type runJob struct {
-		eval      Eval
-		modelKey  string
-		agent     string
-		model     string
-		config    string
+		eval     Eval
+		modelKey string
+		agent    string
+		model    string
+		config   string
 	}
 
 	for _, eval := range ef.Evals {

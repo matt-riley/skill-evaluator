@@ -189,3 +189,128 @@ func readEvals(skillDir string) (*EvalFile, error) {
 	}
 	return &ef, nil
 }
+
+// buildFixPrompt creates a task prompt with critique from a previous failed attempt.
+func buildFixPrompt(skillPath string, eval Eval, outDir string, critique string) string {
+	var b strings.Builder
+	b.WriteString("Execute this task in non-interactive mode (do not ask questions, do not wait for confirmation).\n")
+
+	if critique != "" {
+		b.WriteString("\nYour previous output had these issues. Fix them and regenerate:\n")
+		b.WriteString(critique)
+		b.WriteString("\n\n")
+	}
+
+	if skillPath != "" {
+		fmt.Fprintf(&b, "- Skill path: %s\n", skillPath)
+	}
+	fmt.Fprintf(&b, "- Task: %s\n", eval.Prompt)
+	if len(eval.Files) > 0 {
+		fmt.Fprintf(&b, "- Input files: %s\n", strings.Join(eval.Files, ", "))
+	}
+	fmt.Fprintf(&b, "- Save outputs to: %s\n", outDir)
+
+	return b.String()
+}
+
+// fixEval runs an iterative refinement loop on a failing with-skill eval.
+// It re-runs the agent with critique from failed assertions until all pass,
+// the score plateaus, or maxAttempts is exhausted.
+func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
+	workspace string, iteration int, baselinePath string, maxAttempts int) (*FixResult, error) {
+
+	evalDir := evalPath(workspace, iteration, eval.ID)
+	gradingPath := filepath.Join(evalDir, "with_skill", "grading.json")
+
+	// Load initial grading
+	data, err := os.ReadFile(gradingPath)
+	if err != nil {
+		return nil, fmt.Errorf("reading initial grading for eval %d: %w", eval.ID, err)
+	}
+	var initialGf GradingFile
+	if err := json.Unmarshal(data, &initialGf); err != nil {
+		return nil, fmt.Errorf("parsing initial grading for eval %d: %w", eval.ID, err)
+	}
+
+	fr := &FixResult{EvalID: eval.ID}
+
+	// Record initial attempt (already done by normal grade step)
+	fr.Attempts = append(fr.Attempts, FixAttempt{Attempt: 1, Grading: &initialGf})
+
+	// If already passing, nothing to fix
+	if initialGf.Summary.Failed == 0 {
+		return fr, nil
+	}
+
+	lastFailed := extractFailedReasoning(&initialGf)
+	skillPath := resolveSkillPath(skillDir, "with_skill", baselinePath)
+	agent := cfg.Defaults.Agent
+	model := cfg.Defaults.Model
+
+	for attempt := 2; attempt <= maxAttempts+1; attempt++ {
+		critique := lastFailed
+		fixDir := filepath.Join(evalDir, "with_skill", fmt.Sprintf("fix-%d", attempt))
+		outDir := filepath.Join(fixDir, "outputs")
+		if err := ensureDir(outDir); err != nil {
+			return fr, fmt.Errorf("creating fix-%d dir: %w", attempt, err)
+		}
+
+		// Run agent with critique
+		task := buildFixPrompt(skillPath, eval, outDir, critique)
+		start := time.Now()
+		cmd := buildAgentCmd(agent, model, task, skillPath)
+		cmd.Dir = skillDir
+		output, err := cmd.CombinedOutput()
+		elapsed := time.Since(start)
+
+		// Save timing
+		td := &TimingData{DurationMs: int(elapsed.Milliseconds())}
+		td.TotalTokens = extractTokens(string(output))
+		tdJSON, _ := json.MarshalIndent(td, "", "  ")
+		_ = os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644)
+
+		// Grade this fix attempt
+		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, attempt)
+		if err != nil {
+			// Can't grade — stop fixing, keep previous best
+			break
+		}
+
+		fa := FixAttempt{Attempt: attempt, Grading: gf, Critique: critique}
+		fr.Attempts = append(fr.Attempts, fa)
+
+		// All pass — stop
+		if gf.Summary.Failed == 0 {
+			break
+		}
+
+		// Convergence check: same failures as last time
+		failed := extractFailedReasoning(gf)
+		if failed == lastFailed {
+			fr.Converged = true
+			break
+		}
+		lastFailed = failed
+	}
+
+	// Find best attempt by pass rate
+	fr.BestFix = 0
+	bestRate := 0.0
+	for i, a := range fr.Attempts {
+		if a.Grading.Summary.PassRate > bestRate {
+			bestRate = a.Grading.Summary.PassRate
+			fr.BestFix = i
+		}
+	}
+
+	// Overwrite grading.json with the best attempt's result
+	best := fr.Attempts[fr.BestFix]
+	saveGrading(gradingPath, best.Grading)
+
+	// Save fix trajectory
+	fixPath := filepath.Join(evalDir, "with_skill", "fix-results.json")
+	fixJSON, _ := json.MarshalIndent(fr, "", "  ")
+	_ = os.WriteFile(fixPath, fixJSON, 0o644)
+
+	return fr, nil
+}

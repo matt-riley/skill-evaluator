@@ -177,3 +177,71 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "..."
 }
+
+// extractFailedReasoning returns a concatenated list of FAIL evidence.
+func extractFailedReasoning(gf *GradingFile) string {
+	var reasons []string
+	for _, ar := range gf.AssertionResults {
+		if !ar.Passed && ar.Evidence != "" {
+			reasons = append(reasons, ar.Evidence)
+		}
+	}
+	return strings.Join(reasons, "\n- ")
+}
+
+// gradeFixAttempt grades a fix attempt's outputs.
+func gradeFixAttempt(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, attempt int) (*GradingFile, error) {
+	evalDir := evalPath(workspace, iteration, eval.ID)
+	fixDir := filepath.Join(evalDir, "with_skill", fmt.Sprintf("fix-%d", attempt))
+	outDir := filepath.Join(fixDir, "outputs")
+
+	outputContents := readOutputContents(outDir)
+	prompt := buildGradingPrompt(eval, outputContents)
+
+	judgeAgent := cfg.Judge.Agent
+	if judgeAgent == "" {
+		judgeAgent = cfg.Defaults.Agent
+	}
+	judgeModel := cfg.Judge.Model
+	if judgeModel == "" {
+		judgeModel = cfg.Defaults.Model
+	}
+
+	cmd := buildAgentCmd(judgeAgent, judgeModel, prompt, "")
+	cmd.Dir = outDir
+	output, err := cmd.Output()
+	if err != nil {
+		gf := &GradingFile{
+			Summary: GradingSummary{Total: len(eval.Assertions), Failed: len(eval.Assertions)},
+		}
+		for _, a := range eval.Assertions {
+			gf.AssertionResults = append(gf.AssertionResults, AssertionResult{
+				Text:     a,
+				Passed:   false,
+				Evidence: fmt.Sprintf("judge error: %v", err),
+			})
+		}
+		saveGrading(filepath.Join(fixDir, "grading.json"), gf)
+		return gf, nil
+	}
+
+	gf, err := parseGradingOutput(string(output), eval.Assertions)
+	if err != nil {
+		return nil, fmt.Errorf("parsing fix-%d grading for eval %d: %w", attempt, eval.ID, err)
+	}
+
+	gf.Summary.Total = len(gf.AssertionResults)
+	for _, ar := range gf.AssertionResults {
+		if ar.Passed {
+			gf.Summary.Passed++
+		} else {
+			gf.Summary.Failed++
+		}
+	}
+	if gf.Summary.Total > 0 {
+		gf.Summary.PassRate = float64(gf.Summary.Passed) / float64(gf.Summary.Total)
+	}
+
+	saveGrading(filepath.Join(fixDir, "grading.json"), gf)
+	return gf, nil
+}

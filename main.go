@@ -61,6 +61,8 @@ Flags:
   --baseline <path|previous>  Baseline for runs (default: none)
   --eval <id>                 Run/Grade a single eval by ID
   --global                    For init: create global config
+  --fix                       (loop) Auto-refine failing evals up to --max-fix-attempts
+  --max-fix-attempts <n>      Max fix attempts per eval (default: 3, with --fix)
 
 Config:
   ~/.config/skill-eval/config.yaml   Global defaults
@@ -376,6 +378,8 @@ func cmdBenchmark(args []string) error {
 func cmdLoop(args []string) error {
 	fs := flag.NewFlagSet("loop", flag.ContinueOnError)
 	baselinePath := fs.String("baseline", "none", "Baseline for runs")
+	fixFlag := fs.Bool("fix", false, "Auto-refine failing evals")
+	maxFixAttempts := fs.Int("max-fix-attempts", 3, "Max fix attempts per eval")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -390,10 +394,101 @@ func cmdLoop(args []string) error {
 	}
 
 	fmt.Println("\n[2/3] Grading...")
-	if err := cmdGrade([]string{"--benchmark"}); err != nil {
+	if err := cmdGrade(nil); err != nil {
 		return fmt.Errorf("grade phase: %w", err)
 	}
 
-	fmt.Println("\n[3/3] Loop complete.")
+	// Fix phase (only when --fix is set)
+	if *fixFlag {
+		fmt.Println("\n[3/4] Auto-fixing failed evals...")
+		if err := runFixPhase(*maxFixAttempts); err != nil {
+			return fmt.Errorf("fix phase: %w", err)
+		}
+	} else {
+		fmt.Println("\n[3/3] Benchmarking...")
+		if err := cmdBenchmark(nil); err != nil {
+			return fmt.Errorf("benchmark phase: %w", err)
+		}
+		fmt.Println("\nLoop complete.")
+		return nil
+	}
+
+	fmt.Println("\n[4/4] Benchmarking...")
+	if err := cmdBenchmark(nil); err != nil {
+		return fmt.Errorf("benchmark phase: %w", err)
+	}
+
+	fmt.Println("\nLoop complete.")
+	return nil
+}
+
+// runFixPhase loads the current iteration's results and auto-refines each
+// failing with-skill eval up to maxAttempts.
+func runFixPhase(maxAttempts int) error {
+	skillDir, err := detectSkillDir()
+	if err != nil {
+		return err
+	}
+
+	cfg, err := LoadConfig(skillDir)
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
+	ef, err := readEvals(skillDir)
+	if err != nil {
+		return err
+	}
+
+	ws := workspacePath(skillDir)
+	iter := nextIteration(ws) - 1
+	if iter < 1 {
+		return fmt.Errorf("no iterations found")
+	}
+
+	ctx := context.Background()
+
+	for _, eval := range ef.Evals {
+		gradingPath := filepath.Join(evalPath(ws, iter, eval.ID), "with_skill", "grading.json")
+		data, err := os.ReadFile(gradingPath)
+		if err != nil {
+			fmt.Printf("  eval %d: no grading, skipping\n", eval.ID)
+			continue
+		}
+		var gf GradingFile
+		if err := json.Unmarshal(data, &gf); err != nil {
+			fmt.Printf("  eval %d: invalid grading, skipping\n", eval.ID)
+			continue
+		}
+
+		if gf.Summary.Failed == 0 {
+			fmt.Printf("  eval %d: already passing, skipping\n", eval.ID)
+			continue
+		}
+
+		fmt.Printf("  eval %d: %d/%d failed — fixing...\n", eval.ID, gf.Summary.Failed, gf.Summary.Total)
+
+		fr, err := fixEval(ctx, cfg, skillDir, eval, ws, iter, "", maxAttempts)
+		if err != nil {
+			fmt.Printf("    fix error: %v\n", err)
+			continue
+		}
+
+		for _, a := range fr.Attempts {
+			status := ""
+			if a.Grading.Summary.Failed == 0 {
+				status = " ✓"
+			}
+			fmt.Printf("    attempt %d: %d/%d passed%s\n",
+				a.Attempt, a.Grading.Summary.Passed, a.Grading.Summary.Total, status)
+		}
+
+		if fr.Converged {
+			fmt.Printf("    (plateaued at attempt %d)\n", len(fr.Attempts))
+		}
+		fmt.Printf("    best: attempt %d (%.0f%% pass)\n", fr.BestFix+1,
+			fr.Attempts[fr.BestFix].Grading.Summary.PassRate*100)
+	}
+
 	return nil
 }

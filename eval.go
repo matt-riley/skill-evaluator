@@ -68,6 +68,21 @@ type Stats struct {
 	Stddev float64 `json:"stddev"`
 }
 
+// FixAttempt records one refinement attempt.
+type FixAttempt struct {
+	Attempt  int          `json:"attempt"`
+	Grading  *GradingFile `json:"grading"`
+	Critique string       `json:"critique"`
+}
+
+// FixResult records the full fix trajectory for one eval.
+type FixResult struct {
+	EvalID    int          `json:"eval_id"`
+	Attempts  []FixAttempt `json:"attempts"`
+	BestFix   int          `json:"best_fix"`
+	Converged bool         `json:"converged"`
+}
+
 // BenchmarkFile is written to benchmark.json.
 type BenchmarkFile struct {
 	RunSummary struct {

@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -68,25 +70,16 @@ Config:
 
 // --- helpers ---
 
-// parseEvalFlag scans args for --eval <id> and returns the ID, or -1 if not found.
-func parseEvalFlag(args []string) int {
-	for i := 0; i < len(args); i++ {
-		if args[i] == "--eval" && i+1 < len(args) {
-			var id int
-			_, _ = fmt.Sscanf(args[i+1], "%d", &id)
-			return id
-		}
-	}
-	return -1
-}
-
 // --- init ---
 
 func cmdInit(args []string) error {
-	for _, a := range args {
-		if a == "--global" {
-			return initGlobalConfig()
-		}
+	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	global := fs.Bool("global", false, "Create global config")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *global {
+		return initGlobalConfig()
 	}
 
 	skillDir, err := os.Getwd()
@@ -175,18 +168,13 @@ judge:
 // --- run ---
 
 func cmdRun(args []string) error {
-	baselinePath := "none"
-	singleEvalID := parseEvalFlag(args)
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--baseline":
-			if i+1 < len(args) {
-				baselinePath = args[i+1]
-				i++
-			}
-		}
+	fs := flag.NewFlagSet("run", flag.ContinueOnError)
+	baselineFlag := fs.String("baseline", "none", "Baseline for runs")
+	evalID := fs.Int("eval", -1, "Run a single eval by ID")
+	if err := fs.Parse(args); err != nil {
+		return err
 	}
+	baselinePath := *baselineFlag
 
 	skillDir, err := detectSkillDir()
 	if err != nil {
@@ -228,7 +216,7 @@ func cmdRun(args []string) error {
 	ctx := context.Background()
 
 	for _, eval := range ef.Evals {
-		if singleEvalID >= 0 && eval.ID != singleEvalID {
+		if *evalID >= 0 && eval.ID != *evalID {
 			continue
 		}
 
@@ -258,14 +246,11 @@ func cmdRun(args []string) error {
 // --- grade ---
 
 func cmdGrade(args []string) error {
-	doBenchmark := false
-	singleEvalID := parseEvalFlag(args)
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--benchmark":
-			doBenchmark = true
-		}
+	fs := flag.NewFlagSet("grade", flag.ContinueOnError)
+	doBenchmark := fs.Bool("benchmark", false, "Compute benchmark after grading")
+	evalID := fs.Int("eval", -1, "Grade a single eval by ID")
+	if err := fs.Parse(args); err != nil {
+		return err
 	}
 
 	skillDir, err := detectSkillDir()
@@ -295,7 +280,7 @@ func cmdGrade(args []string) error {
 	ctx := context.Background()
 
 	for _, eval := range ef.Evals {
-		if singleEvalID >= 0 && eval.ID != singleEvalID {
+		if *evalID >= 0 && eval.ID != *evalID {
 			continue
 		}
 
@@ -323,7 +308,7 @@ func cmdGrade(args []string) error {
 		}
 	}
 
-	if doBenchmark {
+	if *doBenchmark {
 		return computeBenchmark(results, ws, iter)
 	}
 	return nil
@@ -354,8 +339,7 @@ func cmdBenchmark(args []string) error {
 		if !e.IsDir() || !strings.HasPrefix(e.Name(), "eval-") {
 			continue
 		}
-		var evalID int
-		_, _ = fmt.Sscanf(e.Name(), "eval-%d", &evalID)
+		evalID, _ := strconv.Atoi(strings.TrimPrefix(e.Name(), "eval-"))
 
 		for _, config := range []string{"with_skill", "baseline"} {
 			gradingPath := filepath.Join(iterationPath(ws, iter), e.Name(), config, "grading.json")
@@ -390,21 +374,15 @@ func cmdBenchmark(args []string) error {
 // --- loop ---
 
 func cmdLoop(args []string) error {
-	baselinePath := "none"
-	for i := 0; i < len(args); i++ {
-		if args[i] == "--baseline" && i+1 < len(args) {
-			baselinePath = args[i+1]
-			i++
-		}
+	fs := flag.NewFlagSet("loop", flag.ContinueOnError)
+	baselinePath := fs.String("baseline", "none", "Baseline for runs")
+	if err := fs.Parse(args); err != nil {
+		return err
 	}
 
 	fmt.Println("=== skill-eval loop ===")
 
-	// Build run args
-	runArgs := []string{}
-	if baselinePath != "" {
-		runArgs = append(runArgs, "--baseline", baselinePath)
-	}
+	runArgs := []string{"--baseline", *baselinePath}
 
 	fmt.Println("\n[1/3] Running evals...")
 	if err := cmdRun(runArgs); err != nil {

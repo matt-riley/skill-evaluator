@@ -131,16 +131,6 @@ func buildAgentCmd(agent, model, task, skillPath string) *exec.Cmd {
 		args = append(args, task)
 		return exec.Command("codex", args...)
 
-	case "copilot":
-		// gh copilot --help: invoked via `gh copilot`
-		// ponytail: placeholder — exact flags TBD once tested
-		args := []string{"copilot"}
-		if model != "" {
-			args = append(args, "--model", model)
-		}
-		args = append(args, task)
-		return exec.Command("gh", args...)
-
 	default:
 		args := []string{task}
 		return exec.Command(agent, args...)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -103,18 +104,9 @@ func readOutputContents(outDir string) map[string]string {
 	return contents
 }
 
-// isText returns true if data looks like text (mostly printable).
+// isText returns true if data looks like text.
 func isText(data []byte) bool {
-	if len(data) == 0 {
-		return true
-	}
-	nonPrintable := 0
-	for _, b := range data {
-		if b != '\n' && b != '\r' && b != '\t' && (b < 32 || b > 126) {
-			nonPrintable++
-		}
-	}
-	return float64(nonPrintable)/float64(len(data)) < 0.1
+	return !bytes.Contains(data, []byte{0})
 }
 
 // buildGradingPrompt creates the prompt for the judge.
@@ -160,35 +152,15 @@ Grading principles:
 
 // parseGradingOutput extracts the grading JSON from the judge's response.
 func parseGradingOutput(output string, assertions []string) (*GradingFile, error) {
-	// Find the first JSON object in the output
 	start := strings.Index(output, "{")
 	if start < 0 {
 		return nil, fmt.Errorf("no JSON found in judge output")
 	}
-	jsonStr := ""
-	depth := 0
-outer:
-	for i := start; i < len(output); i++ {
-		switch output[i] {
-		case '{':
-			depth++
-		case '}':
-			depth--
-			if depth == 0 {
-				jsonStr = output[start : i+1]
-				break outer
-			}
-		}
-	}
-	if jsonStr == "" {
-		return nil, fmt.Errorf("no JSON found in judge output")
-	}
-
+	raw := output[start:]
 	var gf GradingFile
-	if err := json.Unmarshal([]byte(jsonStr), &gf); err != nil {
-		return nil, fmt.Errorf("invalid grading JSON: %w\nraw: %s", err, truncate(jsonStr, 500))
+	if err := json.NewDecoder(strings.NewReader(raw)).Decode(&gf); err != nil {
+		return nil, fmt.Errorf("invalid grading JSON: %w\nraw: %s", err, truncate(raw, 500))
 	}
-
 	return &gf, nil
 }
 

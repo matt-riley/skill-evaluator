@@ -5,6 +5,24 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [0.4.0](https://github.com/matt-riley/skill-evaluator/compare/v0.3.0...v0.4.0) (2026-06-25)
+
+
+### Features
+
+* add view transitions for smooth page navigation ([bcfc382](https://github.com/matt-riley/skill-evaluator/commit/bcfc382f3daeb4f0322a58c4f19404445b9171ef))
+* **docs:** reorder docs menu, rename README to Home, add GitHub link ([7d92c20](https://github.com/matt-riley/skill-evaluator/commit/7d92c20fd8453ceaa98082f3faff695beb4bb8e6))
+* **docs:** wire full SEO stack ([7f82d89](https://github.com/matt-riley/skill-evaluator/commit/7f82d895424ec679d968e853324713bfceee80cd))
+
+
+### Bug Fixes
+
+* **docs:** compile images at build time to avoid 404 _image endpoint ([b8da6b2](https://github.com/matt-riley/skill-evaluator/commit/b8da6b2df63c541f9a7ca553de1acfc77e8cf0db))
+* **docs:** put Home at the top of the docs menu ([8d42852](https://github.com/matt-riley/skill-evaluator/commit/8d42852ee6cfe04f4260a81ed3eecfb05ffb6504))
+* **docs:** remove stale wrangler deploy config and add pages deploy script ([ea75a79](https://github.com/matt-riley/skill-evaluator/commit/ea75a79d7b7bc75d16268970415b5e81b9a328d7))
+* menu layout, guide ordering, and larger GIFs ([c11bb0e](https://github.com/matt-riley/skill-evaluator/commit/c11bb0e9c824d298f8931cb869e6e7b684e531b7))
+* VHS tapes use harness scripts, type real commands not comments ([7690633](https://github.com/matt-riley/skill-evaluator/commit/769063385927a9dfb1f901b25e28ce55f18a77e7))
+
 ## [0.3.0](https://github.com/matt-riley/skill-evaluator/compare/v0.2.0...v0.3.0) (2026-06-25)
 
 

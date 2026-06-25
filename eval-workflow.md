@@ -44,6 +44,29 @@ Assertions are simple pass/fail statements about what your output should look li
 
 Keep your assertions specific and observable (like "a file named results.csv exists"). Try to avoid vague statements ("the output is good") or super brittle ones ("it says exactly 'Total Revenue: $X'").
 
+### Deterministic assertion matchers 🤖
+
+For common checks, you can use prefix-based matchers that are evaluated locally instead of being sent to the LLM judge. These are faster, cheaper, and give consistent verdicts:
+
+```json
+"assertions": [
+  "file_exists: results.csv",
+  "contains_text: summary.txt:Total revenue",
+  "matches_text: output.md:^## Summary",
+  "The chart uses a sensible color palette and is visually clear"
+]
+```
+
+Supported prefixes:
+
+| Prefix | Example | What it checks |
+|--------|---------|----------------|
+| `file_exists:` | `file_exists: results.csv` | A file was produced in the output directory. |
+| `contains_text:` | `contains_text: summary.txt:Total revenue` | A file contains the given literal text. |
+| `matches_text:` | `matches_text: output.md:^## Summary` | A file matches the given regular expression. |
+
+Any assertion without a prefix is sent to the LLM judge unchanged, so you can mix deterministic checks with open-ended judgement in the same eval.
+
 ### 3. Run the loop! 🔄
 
 Ready? Let's go!

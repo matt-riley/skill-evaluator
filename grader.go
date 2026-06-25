@@ -6,9 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+// cmdBuilder builds an exec.Cmd for the judge. Swapped in tests to avoid shelling out.
+type cmdBuilder func(agent, model, task, skillPath string) *exec.Cmd
+
+// graderCmdBuilder is the live command builder; tests may override it.
+var graderCmdBuilder cmdBuilder = buildAgentCmd
 
 // gradeEval shells out to the judge agent to grade assertions against outputs.
 func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, configLabel string) (*GradingFile, error) {
@@ -17,47 +25,73 @@ func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, it
 	return gradeFromOutput(ctx, cfg, eval, outDir, gradingPath, fmt.Sprintf("eval %d (%s)", eval.ID, configLabel))
 }
 
-// gradeFromOutput runs the judge on output contents and writes the grading file.
+// gradeFromOutput evaluates deterministic assertions locally and sends the rest to the judge.
 func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradingPath, contextLabel string) (*GradingFile, error) {
 	if len(eval.Assertions) == 0 {
 		return nil, fmt.Errorf("eval %d has no assertions to grade", eval.ID)
 	}
 
 	outputContents := readOutputContents(outDir)
-	prompt := buildGradingPrompt(eval, outputContents)
 
-	judgeAgent := cfg.Judge.Agent
-	if judgeAgent == "" {
-		judgeAgent = cfg.Defaults.Agent
-	}
-	judgeModel := cfg.Judge.Model
-	if judgeModel == "" {
-		judgeModel = cfg.Defaults.Model
-	}
+	results := make([]AssertionResult, len(eval.Assertions))
+	llmAssertions := make([]string, 0, len(eval.Assertions))
+	llmPositions := make([]int, 0, len(eval.Assertions))
 
-	cmd := buildAgentCmd(judgeAgent, judgeModel, prompt, "")
-	cmd.Dir = outDir
-	output, err := cmd.Output()
-	if err != nil {
-		gf := &GradingFile{
-			Summary: GradingSummary{Total: len(eval.Assertions), Failed: len(eval.Assertions)},
+	for i, a := range eval.Assertions {
+		pa := parseAssertion(a)
+		if pa.Type == MatcherLLM {
+			llmAssertions = append(llmAssertions, a)
+			llmPositions = append(llmPositions, i)
+		} else {
+			results[i] = evaluateMatcher(pa, outDir, outputContents)
 		}
-		for _, a := range eval.Assertions {
-			gf.AssertionResults = append(gf.AssertionResults, AssertionResult{
-				Text:     a,
-				Passed:   false,
-				Evidence: fmt.Sprintf("judge error: %v", err),
-			})
+	}
+
+	if len(llmAssertions) > 0 {
+		llmEval := eval
+		llmEval.Assertions = llmAssertions
+		prompt := buildGradingPrompt(llmEval, outputContents)
+
+		judgeAgent := cfg.Judge.Agent
+		if judgeAgent == "" {
+			judgeAgent = cfg.Defaults.Agent
 		}
-		saveGrading(gradingPath, gf)
-		return gf, nil
+		judgeModel := cfg.Judge.Model
+		if judgeModel == "" {
+			judgeModel = cfg.Defaults.Model
+		}
+
+		cmd := graderCmdBuilder(judgeAgent, judgeModel, prompt, "")
+		cmd.Dir = outDir
+		output, err := cmd.Output()
+		if err != nil {
+			for j, pos := range llmPositions {
+				results[pos] = AssertionResult{
+					Text:     llmAssertions[j],
+					Passed:   false,
+					Evidence: fmt.Sprintf("judge error: %v", err),
+				}
+			}
+		} else {
+			llmGf, err := parseGradingOutput(string(output), llmAssertions)
+			if err != nil {
+				return nil, fmt.Errorf("parsing grading output for %s: %w", contextLabel, err)
+			}
+			for j, pos := range llmPositions {
+				if j < len(llmGf.AssertionResults) {
+					results[pos] = llmGf.AssertionResults[j]
+				} else {
+					results[pos] = AssertionResult{
+						Text:     llmAssertions[j],
+						Passed:   false,
+						Evidence: "missing result from judge",
+					}
+				}
+			}
+		}
 	}
 
-	gf, err := parseGradingOutput(string(output), eval.Assertions)
-	if err != nil {
-		return nil, fmt.Errorf("parsing grading output for %s: %w", contextLabel, err)
-	}
-
+	gf := &GradingFile{AssertionResults: results}
 	gf.Summary.Total = len(gf.AssertionResults)
 	for _, ar := range gf.AssertionResults {
 		if ar.Passed {
@@ -105,6 +139,79 @@ func readOutputContents(outDir string) map[string]string {
 // isText returns true if data looks like text.
 func isText(data []byte) bool {
 	return !bytes.Contains(data, []byte{0})
+}
+
+// parseAssertion converts an assertion string into a structured matcher.
+func parseAssertion(s string) ParsedAssertion {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "file_exists:") {
+		return ParsedAssertion{
+			Original: s,
+			Type:     MatcherFileExists,
+			File:     strings.TrimSpace(s[len("file_exists:"):]),
+		}
+	}
+	if strings.HasPrefix(s, "contains_text:") {
+		rest := s[len("contains_text:"):]
+		parts := strings.SplitN(rest, ":", 2)
+		if len(parts) == 2 {
+			return ParsedAssertion{
+				Original: s,
+				Type:     MatcherContainsText,
+				File:     strings.TrimSpace(parts[0]),
+				Arg:      strings.TrimSpace(parts[1]),
+			}
+		}
+	}
+	if strings.HasPrefix(s, "matches_text:") {
+		rest := s[len("matches_text:"):]
+		parts := strings.SplitN(rest, ":", 2)
+		if len(parts) == 2 {
+			return ParsedAssertion{
+				Original: s,
+				Type:     MatcherMatchesText,
+				File:     strings.TrimSpace(parts[0]),
+				Arg:      strings.TrimSpace(parts[1]),
+			}
+		}
+	}
+	return ParsedAssertion{Original: s, Type: MatcherLLM}
+}
+
+// evaluateMatcher runs a deterministic matcher against output files.
+func evaluateMatcher(pa ParsedAssertion, outDir string, outputContents map[string]string) AssertionResult {
+	switch pa.Type {
+	case MatcherFileExists:
+		_, err := os.Stat(filepath.Join(outDir, pa.File))
+		if err == nil {
+			return AssertionResult{Text: pa.Original, Passed: true, Evidence: fmt.Sprintf("file %s exists", pa.File)}
+		}
+		return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("file %s does not exist", pa.File)}
+	case MatcherContainsText:
+		content, ok := outputContents[pa.File]
+		if !ok {
+			return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("file %s not found in outputs", pa.File)}
+		}
+		if strings.Contains(content, pa.Arg) {
+			return AssertionResult{Text: pa.Original, Passed: true, Evidence: fmt.Sprintf("file %s contains %q", pa.File, pa.Arg)}
+		}
+		return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("file %s does not contain %q", pa.File, pa.Arg)}
+	case MatcherMatchesText:
+		content, ok := outputContents[pa.File]
+		if !ok {
+			return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("file %s not found in outputs", pa.File)}
+		}
+		re, err := regexp.Compile(pa.Arg)
+		if err != nil {
+			return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("invalid regex %q: %v", pa.Arg, err)}
+		}
+		if re.MatchString(content) {
+			return AssertionResult{Text: pa.Original, Passed: true, Evidence: fmt.Sprintf("file %s matches %q", pa.File, pa.Arg)}
+		}
+		return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("file %s does not match %q", pa.File, pa.Arg)}
+	default:
+		return AssertionResult{Text: pa.Original, Passed: false, Evidence: "unhandled matcher type"}
+	}
 }
 
 // buildGradingPrompt creates the prompt for the judge.

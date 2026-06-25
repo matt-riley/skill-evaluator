@@ -17,6 +17,28 @@ type Eval struct {
 	Assertions     []string `json:"assertions,omitempty"`
 }
 
+// MatcherType identifies how an assertion should be evaluated.
+type MatcherType string
+
+const (
+	// MatcherLLM sends the assertion to the configured judge agent.
+	MatcherLLM MatcherType = "llm"
+	// MatcherFileExists checks for a file in the output directory.
+	MatcherFileExists MatcherType = "file_exists"
+	// MatcherContainsText checks that a file contains a literal substring.
+	MatcherContainsText MatcherType = "contains_text"
+	// MatcherMatchesText checks that a file matches a regular expression.
+	MatcherMatchesText MatcherType = "matches_text"
+)
+
+// ParsedAssertion is the structured form of an assertion string.
+type ParsedAssertion struct {
+	Original string
+	Type     MatcherType
+	File     string
+	Arg      string
+}
+
 // TimingData captured from an agent run.
 type TimingData struct {
 	TotalTokens int `json:"total_tokens"`

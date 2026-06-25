@@ -5,9 +5,10 @@ import { buildNavLinks, cleanPath, EXCLUDED_DOCS, extractDescription, GITHUB_URL
 export async function getStaticPaths() {
   const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
   const adrDocs = import.meta.glob('../../../../docs/adr/*.md', { eager: true });
+  const guideDocs = import.meta.glob('../../../../docs/guides/*.md', { eager: true });
 
   const allFiles: Record<string, any> = Object.fromEntries(
-    Object.entries({ ...rootDocs, ...adrDocs }).filter(([key]) =>
+    Object.entries({ ...rootDocs, ...adrDocs, ...guideDocs }).filter(([key]) =>
       !EXCLUDED_DOCS.some((doc) => key.toLowerCase().endsWith(doc))
     )
   );
@@ -32,7 +33,9 @@ const Content = doc.default || doc.Content || doc;
 const currentSlug = (Astro.params.slug || 'README').toLowerCase();
 
 const isAnyAdrActive = currentSlug.startsWith('adr/');
-const normalLinks = navLinks.filter(link => !link.isAdr && link.path !== 'changelog');
+const isAnyGuideActive = currentSlug.startsWith('guides/');
+const normalLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog');
+const guideLinks = navLinks.filter(link => link.isGuide);
 const adrLinks = navLinks.filter(link => link.isAdr);
 const changelogLink = navLinks.find(link => link.path === 'changelog');
 
@@ -71,6 +74,29 @@ const description = doc.frontmatter?.description || extractDescription(typeof do
           </ul>
         </div>
         
+        <details class="group" open={isAnyGuideActive}>
+          <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+            Guides 📖
+            <span class="transform group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <ul class="space-y-4 mt-2">
+            {guideLinks.map(link => (
+              <li>
+                <a
+                  href={`/${link.path}/`}
+                  class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+                    link.path === currentSlug
+                      ? 'bg-neo-pink text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                      : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+                  }`}
+                >
+                  {link.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+
         <details class="group" open={isAnyAdrActive}>
           <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
             Arch Decisions 🏗️
@@ -167,6 +193,29 @@ const description = doc.frontmatter?.description || extractDescription(typeof do
             </ul>
           </div>
           
+          <details class="group" open={isAnyGuideActive}>
+            <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+              Guides 📖
+              <span class="transform group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <ul class="space-y-4 mt-2">
+              {guideLinks.map(link => (
+                <li>
+                  <a
+                    href={`/${link.path}/`}
+                    class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+                      link.path === currentSlug
+                        ? 'bg-neo-pink text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                        : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+                    }`}
+                  >
+                    {link.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+
           <details class="group" open={isAnyAdrActive}>
             <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
               Arch Decisions 🏗️

@@ -4,9 +4,10 @@ import { cleanPath, EXCLUDED_DOCS } from "../utils/routing";
 
 const rootDocs = import.meta.glob("../../../../*.md", { eager: true });
 const adrDocs = import.meta.glob("../../../../docs/adr/*.md", { eager: true });
+const guideDocs = import.meta.glob("../../../../docs/guides/*.md", { eager: true });
 
 const allFiles: Record<string, any> = Object.fromEntries(
-  Object.entries({ ...rootDocs, ...adrDocs }).filter(
+  Object.entries({ ...rootDocs, ...adrDocs, ...guideDocs }).filter(
     ([key]) => !EXCLUDED_DOCS.some((doc) => key.toLowerCase().endsWith(doc)),
   ),
 );

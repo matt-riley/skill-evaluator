@@ -34,6 +34,7 @@ export function buildNavLinks(keys: string[]) {
       path: path.toLowerCase(),
       title: formatTitle(name),
       isAdr: path.startsWith("adr/"),
+      isGuide: path.startsWith("guides/"),
     };
   });
 
@@ -42,8 +43,13 @@ export function buildNavLinks(keys: string[]) {
     if (a.path === "changelog") return 1;
     if (b.path === "changelog") return -1;
 
+    // ADRs sink below guides and normal docs.
     if (a.isAdr && !b.isAdr) return 1;
     if (!a.isAdr && b.isAdr) return -1;
+
+    // Guides sit between normal docs and ADRs.
+    if (a.isGuide && !b.isGuide) return 1;
+    if (!a.isGuide && b.isGuide) return -1;
 
     const aIndex = DOC_ORDER.indexOf(a.path);
     const bIndex = DOC_ORDER.indexOf(b.path);

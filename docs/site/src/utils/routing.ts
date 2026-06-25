@@ -44,6 +44,15 @@ export function buildNavLinks(keys: string[]) {
     };
   });
 
+  const orderedCompare = (a: string, b: string, order: string[]) => {
+    const ai = order.indexOf(a);
+    const bi = order.indexOf(b);
+    if (ai >= 0 && bi >= 0) return ai - bi;
+    if (ai >= 0) return -1;
+    if (bi >= 0) return 1;
+    return undefined;
+  };
+
   return links.sort((a, b) => {
     // Changelog is always last, even below ADRs.
     if (a.path === "changelog") return 1;
@@ -57,17 +66,11 @@ export function buildNavLinks(keys: string[]) {
     if (a.isGuide && !b.isGuide) return 1;
     if (!a.isGuide && b.isGuide) return -1;
 
-    const aIndex = DOC_ORDER.indexOf(a.path);
-    const bIndex = DOC_ORDER.indexOf(b.path);
-    if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
-    if (aIndex >= 0) return -1;
-    if (bIndex >= 0) return 1;
+    const docCmp = orderedCompare(a.path, b.path, DOC_ORDER);
+    if (docCmp !== undefined) return docCmp;
 
-    const aGuideIndex = GUIDE_ORDER.indexOf(a.path);
-    const bGuideIndex = GUIDE_ORDER.indexOf(b.path);
-    if (aGuideIndex >= 0 && bGuideIndex >= 0) return aGuideIndex - bGuideIndex;
-    if (aGuideIndex >= 0) return -1;
-    if (bGuideIndex >= 0) return 1;
+    const guideCmp = orderedCompare(a.path, b.path, GUIDE_ORDER);
+    if (guideCmp !== undefined) return guideCmp;
 
     return a.title.localeCompare(b.title);
   });

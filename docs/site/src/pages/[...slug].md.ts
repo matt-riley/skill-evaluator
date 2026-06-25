@@ -30,7 +30,7 @@ export const GET: APIRoute = ({ params }) => {
   }
 
   const [, mod] = entry;
-  const body = typeof mod.rawContent === "function" ? mod.rawContent() : "";
+  const body = mod.rawContent();
   const title = mod.frontmatter?.title || (lookupSlug === "readme" ? "Home" : lookupSlug);
   const description = mod.frontmatter?.description || "";
   const canonicalPath = lookupSlug === "readme" ? "" : `${lookupSlug}/`;

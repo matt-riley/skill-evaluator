@@ -115,6 +115,73 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
         <span class="text-white font-black text-lg -rotate-6">SE</span>
       </div>
       <a href="/" class="text-3xl font-black text-black tracking-tight">Skill Eval</a>
+      <button id="menu-toggle" aria-label="Open menu" class="ml-auto p-2 bg-white border-4 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
+        <span class="text-2xl font-black">☰</span>
+      </button>
+    </div>
+
+    <!-- Mobile menu overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 md:hidden">
+      <div class="absolute inset-0 bg-black/50" id="mobile-menu-backdrop"></div>
+      <div id="mobile-menu-drawer" class="absolute left-0 top-0 bottom-0 w-80 bg-neo-yellow border-r-4 border-black p-6 overflow-y-auto transform -translate-x-full transition-transform duration-300">
+        <div class="flex justify-between items-center mb-8">
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-2xl bg-neo-pink border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span class="text-white font-black text-sm -rotate-6">SE</span>
+            </div>
+            <span class="text-xl font-black text-black">Skill Eval</span>
+          </div>
+          <button id="menu-close" aria-label="Close menu" class="p-2 bg-white border-4 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
+            <span class="text-xl font-black">✕</span>
+          </button>
+        </div>
+        
+        <div class="space-y-8">
+          <div>
+            <h3 class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2">Documentation 📚</h3>
+            <ul class="space-y-4">
+              {navLinks.filter(link => !link.isAdr).map(link => (
+                <li>
+                  <a 
+                    href={`/${link.path === 'readme' ? '' : link.path}`} 
+                    class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+                      link.isActive 
+                        ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1' 
+                        : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+                    }`}
+                  >
+                    {link.title === 'Readme' ? '👋 Introduction' : `✨ ${link.title}`}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <details class="group" open={isAnyAdrActive}>
+            <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+              Arch Decisions 🏗️
+              <span class="transform group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <ul class="space-y-4 mt-2">
+              {navLinks.filter(link => link.isAdr).map(link => (
+                <li>
+                  <a 
+                    href={`/${link.path}`} 
+                    class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold truncate border-4 border-black ${
+                      link.isActive 
+                        ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1' 
+                        : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:rotate-1'
+                    }`}
+                    title={link.title}
+                  >
+                    {link.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -127,4 +194,30 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
       </div>
     </main>
   </div>
+
+  <script>
+    const toggle = document.getElementById('menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+    const close = document.getElementById('menu-close');
+    const drawer = document.getElementById('mobile-menu-drawer');
+
+    toggle?.addEventListener('click', () => {
+      if (!menu || !drawer) return;
+      menu.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        drawer.classList.remove('-translate-x-full');
+        drawer.classList.add('translate-x-0');
+      });
+    });
+
+    function closeMenu() {
+      if (!menu || !drawer) return;
+      drawer.classList.remove('translate-x-0');
+      drawer.classList.add('-translate-x-full');
+      setTimeout(() => menu.classList.add('hidden'), 300);
+    }
+
+    close?.addEventListener('click', closeMenu);
+    document.getElementById('mobile-menu-backdrop')?.addEventListener('click', closeMenu);
+  </script>
 </Layout>

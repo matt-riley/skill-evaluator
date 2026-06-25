@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
+	"os"
 	"testing"
+	"time"
 )
 
 func TestBenchmarkMean(t *testing.T) {
@@ -74,6 +78,147 @@ func TestBenchmarkAggregateRuns(t *testing.T) {
 			t.Errorf("Tokens mean = %v, want 100", got.Tokens.Mean)
 		}
 	})
+}
+
+func TestSubtractDeltas(t *testing.T) {
+	a := Delta{PassRate: 0.8, TimeSeconds: 2.0, Tokens: 100}
+	b := Delta{PassRate: 0.6, TimeSeconds: 1.5, Tokens: 80}
+	got := subtractDeltas(a, b)
+	if math.Abs(got.PassRate-0.2) > 1e-9 || math.Abs(got.TimeSeconds-0.5) > 1e-9 || math.Abs(got.Tokens-20) > 1e-9 {
+		t.Errorf("subtractDeltas(a, b) = %+v, want {0.2 0.5 20}", *got)
+	}
+
+	got = subtractDeltas(b, a)
+	if math.Abs(got.PassRate+0.2) > 1e-9 || math.Abs(got.TimeSeconds+0.5) > 1e-9 || math.Abs(got.Tokens+20) > 1e-9 {
+		t.Errorf("subtractDeltas(b, a) = %+v, want {-0.2 -0.5 -20}", *got)
+	}
+}
+
+func TestLoadPreviousBenchmark(t *testing.T) {
+	dir := t.TempDir()
+
+	// No previous iteration => nil.
+	iter, prev, err := loadPreviousBenchmark(dir, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prev != nil || iter != 0 {
+		t.Fatalf("expected no previous benchmark, got iter=%d prev=%v", iter, prev)
+	}
+
+	// Create iteration-1 and iteration-2 benchmark files.
+	mustWriteBenchmark(t, dir, 1, &BenchmarkFile{GeneratedAt: time.Now()})
+	mustWriteBenchmark(t, dir, 2, &BenchmarkFile{GeneratedAt: time.Now()})
+
+	// Should find iteration-2 first when current is 3.
+	iter, prev, err = loadPreviousBenchmark(dir, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prev == nil {
+		t.Fatal("expected previous benchmark, got nil")
+	}
+	if iter != 2 {
+		t.Fatalf("expected previous iteration 2, got %d", iter)
+	}
+
+	// Should skip missing iteration-2 and find iteration-1.
+	if err := os.Remove(fmt.Sprintf("%s/iteration-2/benchmark.json", dir)); err != nil {
+		t.Fatalf("remove: %v", err)
+	}
+	iter, prev, err = loadPreviousBenchmark(dir, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prev == nil {
+		t.Fatal("expected previous benchmark, got nil")
+	}
+	if iter != 1 {
+		t.Fatalf("expected previous iteration 1, got %d", iter)
+	}
+}
+
+func TestIterationDeltaSingleModel(t *testing.T) {
+	dir := t.TempDir()
+	mustWriteBenchmark(t, dir, 1, &BenchmarkFile{
+		RunSummary: struct {
+			WithSkill RunSummary `json:"with_skill"`
+			Baseline  RunSummary `json:"baseline"`
+			Delta     Delta      `json:"delta"`
+		}{
+			Delta: Delta{PassRate: 0.1, TimeSeconds: 0.2, Tokens: 10},
+		},
+		GeneratedAt: time.Now(),
+	})
+
+	current := []*RunResult{
+		{Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.9}}, Timing: &TimingData{DurationMs: 2000, TotalTokens: 110}},
+		{Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}, Timing: &TimingData{DurationMs: 1500, TotalTokens: 80}},
+	}
+	if err := computeBenchmark(current, dir, 2); err != nil {
+		t.Fatalf("computeBenchmark failed: %v", err)
+	}
+
+	bf := mustReadBenchmark(t, dir, 2)
+	if bf.PreviousIteration != 1 {
+		t.Fatalf("PreviousIteration = %d, want 1", bf.PreviousIteration)
+	}
+	if bf.IterationDelta == nil {
+		t.Fatal("IterationDelta is nil, want non-nil")
+	}
+	// Current delta: 0.9-0.6=0.3, 2.0-1.5=0.5, 110-80=30
+	// Previous delta: 0.1, 0.2, 10
+	// Iteration delta: 0.2, 0.3, 20
+	if math.Abs(bf.IterationDelta.PassRate-0.2) > 1e-9 || math.Abs(bf.IterationDelta.TimeSeconds-0.3) > 1e-9 || math.Abs(bf.IterationDelta.Tokens-20) > 1e-9 {
+		t.Fatalf("IterationDelta = %+v, want {0.2 0.3 20}", *bf.IterationDelta)
+	}
+}
+
+func TestIterationDeltaNoPrevious(t *testing.T) {
+	dir := t.TempDir()
+	current := []*RunResult{
+		{Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.8}}, Timing: &TimingData{DurationMs: 1000, TotalTokens: 100}},
+		{Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.5}}, Timing: &TimingData{DurationMs: 800, TotalTokens: 70}},
+	}
+	if err := computeBenchmark(current, dir, 1); err != nil {
+		t.Fatalf("computeBenchmark failed: %v", err)
+	}
+
+	bf := mustReadBenchmark(t, dir, 1)
+	if bf.PreviousIteration != 0 {
+		t.Fatalf("PreviousIteration = %d, want 0", bf.PreviousIteration)
+	}
+	if bf.IterationDelta != nil {
+		t.Fatalf("IterationDelta = %+v, want nil", bf.IterationDelta)
+	}
+}
+
+func mustWriteBenchmark(t *testing.T, dir string, iter int, bf *BenchmarkFile) {
+	t.Helper()
+	path := iterationPath(dir, iter)
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	data, err := json.MarshalIndent(bf, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if err := os.WriteFile(fmt.Sprintf("%s/benchmark.json", path), data, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+}
+
+func mustReadBenchmark(t *testing.T, dir string, iter int) *BenchmarkFile {
+	t.Helper()
+	data, err := os.ReadFile(fmt.Sprintf("%s/benchmark.json", iterationPath(dir, iter)))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var bf BenchmarkFile
+	if err := json.Unmarshal(data, &bf); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return &bf
 }
 
 func cmpRunSummary(a, b RunSummary) bool {

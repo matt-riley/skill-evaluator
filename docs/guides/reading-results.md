@@ -43,6 +43,23 @@ You'll see something like this:
 
 > 💡 **A positive delta is the goal.** If `delta` is `+0%` or negative, your skill isn't helping (or it's actively hurting). Time to revisit your instructions!
 
+### Tracking progress across iterations 🔄
+
+When a previous iteration exists, `benchmark.json` also includes a `previous_iteration` field and an `iteration_delta`:
+
+```json
+{
+  "previous_iteration": 1,
+  "iteration_delta": {
+    "pass_rate": 0.05,
+    "time_seconds": 0.2,
+    "tokens": -15
+  }
+}
+```
+
+`iteration_delta` is the current iteration's delta minus the previous iteration's delta. A **positive `pass_rate`** means your skill improved relative to baseline since the last run. A negative value means it got worse — a signal that a recent change may have hurt performance.
+
 ---
 
 ## Per-eval breakdown 🔬

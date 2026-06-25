@@ -147,4 +147,8 @@ type BenchmarkFile struct {
 	BestModel   string                    `json:"best_model,omitempty"`
 	WorstModel  string                    `json:"worst_model,omitempty"`
 	GeneratedAt time.Time                 `json:"generated_at"`
+
+	// New fields
+	PreviousIteration int    `json:"previous_iteration,omitempty"`
+	IterationDelta    *Delta `json:"iteration_delta,omitempty"`
 }

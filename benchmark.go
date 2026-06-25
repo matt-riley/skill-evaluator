@@ -51,12 +51,89 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 		}
 	}
 
+	prevIter, prev, err := loadPreviousBenchmark(workspace, iteration)
+	if err != nil {
+		return err
+	}
+	if prev != nil {
+		bf.PreviousIteration = prevIter
+		if len(bf.Models) == 0 {
+			bf.IterationDelta = subtractDeltas(bf.RunSummary.Delta, prev.RunSummary.Delta)
+		} else {
+			bf.IterationDelta = subtractDeltas(
+				averageDelta(modelDeltas(bf.Models)),
+				averageDelta(modelDeltas(prev.Models)),
+			)
+		}
+	}
+
+	if err := ensureDir(iterationPath(workspace, iteration)); err != nil {
+		return err
+	}
 	path := fmt.Sprintf("%s/benchmark.json", iterationPath(workspace, iteration))
 	data, err := json.MarshalIndent(bf, "", "  ")
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+// loadPreviousBenchmark walks backward from currentIter-1 and returns the first
+// benchmark.json found, or (0, nil, nil) if none exists.
+func loadPreviousBenchmark(workspace string, currentIter int) (int, *BenchmarkFile, error) {
+	for i := currentIter - 1; i >= 1; i-- {
+		path := fmt.Sprintf("%s/benchmark.json", iterationPath(workspace, i))
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return 0, nil, err
+		}
+		var bf BenchmarkFile
+		if err := json.Unmarshal(data, &bf); err != nil {
+			return 0, nil, err
+		}
+		return i, &bf, nil
+	}
+	return 0, nil, nil
+}
+
+// modelDeltas extracts the delta for each model in a ModelBenchmark map.
+func modelDeltas(models map[string]ModelBenchmark) []Delta {
+	deltas := make([]Delta, 0, len(models))
+	for _, mb := range models {
+		deltas = append(deltas, mb.Delta)
+	}
+	return deltas
+}
+
+// averageDelta returns the mean of a slice of deltas.
+func averageDelta(deltas []Delta) Delta {
+	if len(deltas) == 0 {
+		return Delta{}
+	}
+	var sum Delta
+	for _, d := range deltas {
+		sum.PassRate += d.PassRate
+		sum.TimeSeconds += d.TimeSeconds
+		sum.Tokens += d.Tokens
+	}
+	n := float64(len(deltas))
+	return Delta{
+		PassRate:    sum.PassRate / n,
+		TimeSeconds: sum.TimeSeconds / n,
+		Tokens:      sum.Tokens / n,
+	}
+}
+
+// subtractDeltas returns a - b.
+func subtractDeltas(a, b Delta) *Delta {
+	return &Delta{
+		PassRate:    a.PassRate - b.PassRate,
+		TimeSeconds: a.TimeSeconds - b.TimeSeconds,
+		Tokens:      a.Tokens - b.Tokens,
+	}
 }
 
 // splitAndAggregate splits results into with_skill and baseline, then aggregates each.

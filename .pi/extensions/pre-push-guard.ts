@@ -77,16 +77,34 @@ export default function (pi: ExtensionAPI) {
     const checks = await detectChecks(ctx.cwd, pi);
     if (checks.length === 0) return;
 
+    // Show running widget
+    const widgetId = "pre-push-guard";
+    const statusLines = ["🔍 Pre-push checks"];
+    for (const c of checks) statusLines.push(`  ⏳ ${c.label}...`);
+    ctx.ui.setWidget(widgetId, statusLines);
+
     const failures: string[] = [];
-    for (const check of checks) {
+    for (let i = 0; i < checks.length; i++) {
+      const check = checks[i];
       const { code, stderr, stdout } = await pi.exec(check.command, check.args);
       if (code !== 0) {
         const output = (stderr || stdout).slice(0, 500);
         failures.push(`${check.label} failed (exit ${code})\n${output}`);
+        statusLines[i + 1] = `  ✗ ${check.label} (exit ${code})`;
+      } else {
+        statusLines[i + 1] = `  ✓ ${check.label}`;
       }
+      ctx.ui.setWidget(widgetId, statusLines);
     }
 
-    if (failures.length === 0) return;
+    // Show final result briefly, then clear
+    const allPassed = failures.length === 0;
+    statusLines.push(allPassed ? "  ✅ All checks passed" : "  ❌ Checks failed");
+    ctx.ui.setWidget(widgetId, statusLines);
+
+    setTimeout(() => ctx.ui.setWidget(widgetId, []), 3000);
+
+    if (allPassed) return;
 
     const reason = "Pre-push checks failed:\n\n" + failures.join("\n\n");
     if (!ctx.hasUI) return { block: true, reason };

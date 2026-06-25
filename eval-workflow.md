@@ -57,6 +57,8 @@ This magic command handles the whole cycle for you:
 2. **Grade:** Asks the judge agent to check your assertions against the outputs, generating a nice `grading.json` with PASS/FAIL verdicts.
 3. **Benchmark:** Gathers all the stats into `benchmark.json` so you can easily see if your skill is pulling its weight!
 
+> 💡 **Want the tool to fix failures automatically?** Try `skill-eval loop --fix` and watch it re-run failing evals with the judge's feedback as a critique! It'll keep refining until things pass or it hits the attempt limit. Perfect for those "almost there" situations.
+
 ### 4. Review the results 🔍
 
 Take a peek inside your workspace. For each eval, you'll find:

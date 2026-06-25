@@ -18,6 +18,7 @@ const GUIDE_ORDER = [
   "guides/first-eval",
   "guides/reading-results",
   "guides/giving-feedback",
+  "guides/auto-fixing",
 ];
 const TITLE_OVERRIDES: Record<string, string> = {
   readme: "Home",

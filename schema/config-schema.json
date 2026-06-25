@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/biztocorp/skill-evaluator/schema/config.json",
+  "$id": "https://github.com/matt-riley/skill-evaluator/schema/config.json",
   "title": "Skill Evaluator Configuration",
   "type": "object",
   "properties": {

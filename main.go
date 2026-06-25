@@ -155,7 +155,7 @@ func initGlobalConfig() error {
 	}
 
 	cfg := `# Skill Evaluator global configuration
-# https://github.com/biztocorp/skill-evaluator
+# https://github.com/matt-riley/skill-evaluator
 
 defaults:
   agent: pi

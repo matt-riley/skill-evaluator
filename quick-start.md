@@ -4,7 +4,7 @@ Getting started is a breeze. Just run these commands:
 
 ```bash
 # Install the CLI tool
-go install github.com/biztocorp/skill-evaluator@latest
+go install github.com/matt-riley/skill-evaluator@latest
 
 # Set up your global config (just once!)
 skill-eval init --global

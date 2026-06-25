@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a single Go module (`github.com/biztocorp/skill-evaluator`) with the CLI entrypoint and core logic at the repo root.
+This repository is a single Go module (`github.com/matt-riley/skill-evaluator`) with the CLI entrypoint and core logic at the repo root.
 
 - `main.go`: subcommand dispatch for `init`, `run`, `grade`, `benchmark`, and `loop`
 - `config.go`, `runner.go`, `grader.go`, `benchmark.go`, `workspace.go`, `eval.go`: config loading, agent execution, grading, aggregation, and shared types
@@ -13,7 +13,7 @@ Generated eval artifacts live outside the skill directory in `<skill-name>-works
 
 ## Build, Test, and Development Commands
 - `go build -o skill-eval .`: build the local CLI binary
-- `go install github.com/biztocorp/skill-evaluator@latest`: install from source
+- `go install github.com/matt-riley/skill-evaluator@latest`: install from source
 - `go test ./...`: run the test suite; this repo currently has no `*_test.go` files
 - `go vet ./...`: run Go static analysis
 

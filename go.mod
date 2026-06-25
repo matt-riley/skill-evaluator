@@ -1,4 +1,4 @@
-module github.com/biztocorp/skill-evaluator
+module github.com/matt-riley/skill-evaluator
 
 go 1.26.4
 

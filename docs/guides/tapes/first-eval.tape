@@ -6,31 +6,33 @@ Set Width 1400
 Set Height 800
 Set Theme "Catppuccin Mocha"
 Set Padding 24
-Set TypingSpeed 40ms
+Set TypingSpeed 45ms
 
 Hide
-Type "WKSP=$(mktemp -d)/my-skill && mkdir -p $WKSP && cd $WKSP"
+Type `ORIG=$(pwd) && skill-eval() { bash "$ORIG/docs/guides/tapes/harness-first-eval.sh" "$@"; }`
 Enter
-Type "mkdir -p evals"
+Type "SKILLDIR=$(mktemp -d) && cd $SKILLDIR"
 Enter
-Type "cat > .skill-eval.yaml << 'EOF'"
-Enter
-Type "agent: pi"
-Enter
-Type "model: claude-sonnet-4-5"
-Enter
-Type "EOF"
+Type "clear"
 Enter
 Show
 
-Type "# We're inside our skill directory. Let's scaffold!"
-Sleep 700ms
-Enter
-Sleep 300ms
-Type "# skill-eval init  →  creates evals/evals.json"
+Type "# Navigate to your skill directory and scaffold..."
 Sleep 800ms
 Enter
+Sleep 300ms
+Type "skill-eval init"
 Sleep 400ms
+Enter
+Sleep 400ms
+
+Type "# It scaffolded evals/evals.json — open it up and fill it in!"
+Sleep 1s
+Enter
+Sleep 300ms
+Type "cat evals/evals.json | jq ."
+Enter
+Sleep 2s
 
 Hide
 Type "cat > evals/evals.json << 'ENDJSON'"
@@ -76,7 +78,8 @@ Sleep 2s
 Type "# Looks great! Time to run the full loop..."
 Sleep 800ms
 Enter
+Sleep 300ms
+Type "skill-eval loop"
 Sleep 400ms
-Type "# skill-eval loop  →  run → grade → benchmark"
-Sleep 1.5s
 Enter
+Sleep 7s

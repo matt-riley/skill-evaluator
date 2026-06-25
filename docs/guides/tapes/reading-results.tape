@@ -6,7 +6,7 @@ Set Width 1400
 Set Height 800
 Set Theme "Catppuccin Mocha"
 Set Padding 24
-Set TypingSpeed 40ms
+Set TypingSpeed 45ms
 
 Hide
 Type "WKSP=$(mktemp -d) && cd $WKSP && mkdir -p workspace/iteration-1"
@@ -45,10 +45,12 @@ Type `}`
 Enter
 Type "ENDJSON"
 Enter
+Type "clear"
+Enter
 Show
 
-Type "# Open up benchmark.json to see the big picture..."
-Sleep 600ms
+Type "# After skill-eval loop finishes, open benchmark.json..."
+Sleep 1s
 Enter
 Sleep 300ms
 Type "cat workspace/iteration-1/benchmark.json | jq .summary"
@@ -56,17 +58,17 @@ Enter
 Sleep 1.5s
 
 Type "# +33% pass rate with the skill vs baseline! 🚀"
-Sleep 800ms
+Sleep 1s
 Enter
 Sleep 400ms
 Type "# Let's drill into per-eval results..."
-Sleep 600ms
+Sleep 700ms
 Enter
 Sleep 300ms
 Type "cat workspace/iteration-1/benchmark.json | jq '.evals | to_entries[] | {eval: .key, result: .value}'"
 Enter
-Sleep 1.8s
+Sleep 2s
 
-Type "# eval-3: FAIL → PASS — that's your skill making the difference ✨"
-Sleep 1.8s
+Type "# eval-3: FAIL → PASS — that's your skill making the difference! ✨"
+Sleep 2s
 Enter

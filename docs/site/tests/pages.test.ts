@@ -2,7 +2,7 @@ import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const distDir = resolve(import.meta.dirname, "../dist");
+const distDir = resolve(import.meta.dirname, "../dist/client");
 
 function readDist(filename: string): string {
   return readFileSync(resolve(distDir, filename), "utf-8");
@@ -49,7 +49,12 @@ describe("Doc pages", () => {
   test("index.html includes sidebar navigation", () => {
     const html = readDist("index.html");
     expect(html).toContain("Documentation");
-    expect(html).toContain("README");
+    expect(html).toContain("🏠 Home");
+  });
+
+  test("README page title is Home", () => {
+    const html = readDist("index.html");
+    expect(html).toContain("<title>Home</title>");
   });
 
   test("mobile menu toggle exists in built output", () => {
@@ -61,5 +66,11 @@ describe("Doc pages", () => {
   test("ADRs are rendered", () => {
     const html = readDist("adr/0001-shell-out-to-agent-runtimes/index.html");
     expect(html).toContain("Shell out to agent runtimes");
+  });
+
+  test("GitHub link is present", () => {
+    const html = readDist("index.html");
+    expect(html).toContain("github.com/matt-riley/skill-evaluator");
+    expect(html).toContain("🐙 GitHub");
   });
 });

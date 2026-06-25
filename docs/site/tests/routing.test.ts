@@ -17,18 +17,19 @@ describe("routing", () => {
   });
 
   describe("buildNavLinks", () => {
-    test("sorts ADRs at the bottom, capitalizes titles, and sets isAdr", () => {
+    test("orders docs logically, names README as Home, keeps ADRs above Changelog", () => {
       const keys = [
         "../../../../docs/adr/0002-second.md",
         "../../../../docs/setup.md",
         "../../../../docs/adr/0001-record.md",
+        "../../../../CHANGELOG.md",
         "../../../../README.md",
       ];
       const navLinks = buildNavLinks(keys, "readme");
 
-      expect(navLinks.length).toBe(4);
+      expect(navLinks.length).toBe(5);
 
-      expect(navLinks[0].title).toBe("README");
+      expect(navLinks[0].title).toBe("Home");
       expect(navLinks[0].isAdr).toBe(false);
 
       expect(navLinks[1].title).toBe("Setup");
@@ -39,6 +40,10 @@ describe("routing", () => {
 
       expect(navLinks[3].title).toBe("0002 Second");
       expect(navLinks[3].isAdr).toBe(true);
+
+      expect(navLinks[4].title).toBe("Changelog");
+      expect(navLinks[4].isAdr).toBe(false);
+      expect(navLinks[4].path).toBe("changelog");
     });
   });
 });

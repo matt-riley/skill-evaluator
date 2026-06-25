@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { buildNavLinks, cleanPath, EXCLUDED_DOCS } from '../utils/routing';
+import { buildNavLinks, cleanPath, EXCLUDED_DOCS, GITHUB_URL } from '../utils/routing';
 
 export async function getStaticPaths() {
   const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
@@ -45,8 +45,13 @@ let { slug } = Astro.params;
 if (!slug || slug === '') slug = 'README';
 
 const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
+const normalLinks = navLinks.filter(link => !link.isAdr && link.path !== 'changelog');
+const adrLinks = navLinks.filter(link => link.isAdr);
+const changelogLink = navLinks.find(link => link.path === 'changelog');
+
+const pageTitle = doc.frontmatter?.title || (slug.toLowerCase() === 'readme' ? 'Home' : slug);
 ---
-<Layout title={doc.frontmatter?.title || slug}>
+<Layout title={pageTitle}>
   <div class="flex min-h-screen text-black font-sans selection:bg-neo-pink selection:text-white">
     <!-- Sidebar -->
     <aside class="w-80 bg-neo-yellow border-r-4 border-black p-6 hidden md:flex flex-col shrink-0 overflow-y-auto h-screen sticky top-0 z-20">
@@ -61,17 +66,17 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
         <div>
           <h3 class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2">Documentation 📚</h3>
           <ul class="space-y-4">
-            {navLinks.filter(link => !link.isAdr).map(link => (
+            {normalLinks.map(link => (
               <li>
-                <a 
-                  href={`/${link.path === 'readme' ? '' : link.path}`} 
+                <a
+                  href={`/${link.path === 'readme' ? '' : link.path}`}
                   class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
-                    link.isActive 
-                      ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1' 
+                    link.isActive
+                      ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
                       : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
                   }`}
                 >
-                  {link.title === 'Readme' ? '👋 Introduction' : `✨ ${link.title}`}
+                  {link.path === 'readme' ? '🏠 Home' : `✨ ${link.title}`}
                 </a>
               </li>
             ))}
@@ -84,13 +89,13 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
             <span class="transform group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <ul class="space-y-4 mt-2">
-            {navLinks.filter(link => link.isAdr).map(link => (
+            {adrLinks.map(link => (
               <li>
-                <a 
-                  href={`/${link.path}`} 
+                <a
+                  href={`/${link.path}`}
                   class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold truncate border-4 border-black ${
-                    link.isActive 
-                      ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1' 
+                    link.isActive
+                      ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1'
                       : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:rotate-1'
                   }`}
                   title={link.title}
@@ -101,6 +106,28 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
             ))}
           </ul>
         </details>
+
+        {changelogLink && (
+          <a
+            href={`/${changelogLink.path}`}
+            class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+              changelogLink.isActive
+                ? 'bg-neo-purple text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+            }`}
+          >
+            📋 {changelogLink.title}
+          </a>
+        )}
+
+        <a
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1"
+        >
+          🐙 GitHub
+        </a>
       </div>
     </aside>
 
@@ -135,17 +162,17 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
           <div>
             <h3 class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2">Documentation 📚</h3>
             <ul class="space-y-4">
-              {navLinks.filter(link => !link.isAdr).map(link => (
+              {normalLinks.map(link => (
                 <li>
-                  <a 
-                    href={`/${link.path === 'readme' ? '' : link.path}`} 
+                  <a
+                    href={`/${link.path === 'readme' ? '' : link.path}`}
                     class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
-                      link.isActive 
-                        ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1' 
+                      link.isActive
+                        ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
                         : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
                     }`}
                   >
-                    {link.title === 'Readme' ? '👋 Introduction' : `✨ ${link.title}`}
+                    {link.path === 'readme' ? '🏠 Home' : `✨ ${link.title}`}
                   </a>
                 </li>
               ))}
@@ -158,13 +185,13 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
               <span class="transform group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <ul class="space-y-4 mt-2">
-              {navLinks.filter(link => link.isAdr).map(link => (
+              {adrLinks.map(link => (
                 <li>
-                  <a 
-                    href={`/${link.path}`} 
+                  <a
+                    href={`/${link.path}`}
                     class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold truncate border-4 border-black ${
-                      link.isActive 
-                        ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1' 
+                      link.isActive
+                        ? 'bg-neo-green text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 -rotate-1'
                         : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:rotate-1'
                     }`}
                     title={link.title}
@@ -175,6 +202,28 @@ const isAnyAdrActive = navLinks.some(link => link.isAdr && link.isActive);
               ))}
             </ul>
           </details>
+
+          {changelogLink && (
+            <a
+              href={`/${changelogLink.path}`}
+              class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+                changelogLink.isActive
+                  ? 'bg-neo-purple text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                  : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+              }`}
+            >
+              📋 {changelogLink.title}
+            </a>
+          )}
+
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1"
+          >
+            🐙 GitHub
+          </a>
         </div>
       </div>
     </div>

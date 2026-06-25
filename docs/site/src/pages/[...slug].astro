@@ -34,7 +34,8 @@ const currentSlug = (Astro.params.slug || 'README').toLowerCase();
 
 const isAnyAdrActive = currentSlug.startsWith('adr/');
 const isAnyGuideActive = currentSlug.startsWith('guides/');
-const normalLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog');
+const homeLink = navLinks.find(link => link.path === 'readme');
+const docLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog' && link.path !== 'readme');
 const guideLinks = navLinks.filter(link => link.isGuide);
 const adrLinks = navLinks.filter(link => link.isAdr);
 const changelogLink = navLinks.find(link => link.path === 'changelog');
@@ -54,26 +55,42 @@ const description = doc.frontmatter?.description || extractDescription(typeof do
       </div>
       
       <div class="space-y-8 flex-1">
-        <div>
-          <h3 class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2">Documentation 📚</h3>
-          <ul class="space-y-4">
-            {normalLinks.map(link => (
+        {homeLink && (
+          <a
+            href="/"
+            class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+              currentSlug === 'readme'
+                ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+            }`}
+          >
+            🏠 Home
+          </a>
+        )}
+
+        <details class="group" open={!isAnyGuideActive && !isAnyAdrActive && currentSlug !== 'readme' && currentSlug !== 'changelog'}>
+          <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+            Documentation 📚
+            <span class="transform group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <ul class="space-y-4 mt-2">
+            {docLinks.map(link => (
               <li>
                 <a
-                  href={`/${link.path === 'readme' ? '' : `${link.path}/`}`}
+                  href={`/${link.path}/`}
                   class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
                     link.path === currentSlug
                       ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
                       : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
                   }`}
                 >
-                  {link.path === 'readme' ? '🏠 Home' : `✨ ${link.title}`}
+                  ✨ {link.title}
                 </a>
               </li>
             ))}
           </ul>
-        </div>
-        
+        </details>
+
         <details class="group" open={isAnyGuideActive}>
           <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
             Guides 📖
@@ -173,26 +190,42 @@ const description = doc.frontmatter?.description || extractDescription(typeof do
         </div>
         
         <div class="space-y-8">
-          <div>
-            <h3 class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2">Documentation 📚</h3>
-            <ul class="space-y-4">
-              {normalLinks.map(link => (
+          {homeLink && (
+            <a
+              href="/"
+              class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+                currentSlug === 'readme'
+                  ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
+                  : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+              }`}
+            >
+              🏠 Home
+            </a>
+          )}
+
+          <details class="group" open={!isAnyGuideActive && !isAnyAdrActive && currentSlug !== 'readme' && currentSlug !== 'changelog'}>
+            <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+              Documentation 📚
+              <span class="transform group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <ul class="space-y-4 mt-2">
+              {docLinks.map(link => (
                 <li>
                   <a
-                    href={`/${link.path === 'readme' ? '' : `${link.path}/`}`}
+                    href={`/${link.path}/`}
                     class={`block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
                       link.path === currentSlug
                         ? 'bg-neo-blue text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1'
                         : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
                     }`}
                   >
-                    {link.path === 'readme' ? '🏠 Home' : `✨ ${link.title}`}
+                    ✨ {link.title}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
-          
+          </details>
+
           <details class="group" open={isAnyGuideActive}>
             <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
               Guides 📖

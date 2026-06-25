@@ -1,9 +1,9 @@
 Output docs/site/public/guides/reading-results.gif
 
 Set Shell "bash"
-Set FontSize 13
-Set Width 1100
-Set Height 660
+Set FontSize 16
+Set Width 1200
+Set Height 700
 Set Theme "Catppuccin Mocha"
 Set Padding 24
 Set TypingSpeed 40ms

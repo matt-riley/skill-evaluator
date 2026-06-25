@@ -13,6 +13,12 @@ const DOC_ORDER = [
   "configuration",
   "workspace",
 ];
+
+const GUIDE_ORDER = [
+  "guides/first-eval",
+  "guides/reading-results",
+  "guides/giving-feedback",
+];
 const TITLE_OVERRIDES: Record<string, string> = {
   readme: "Home",
 };
@@ -56,6 +62,12 @@ export function buildNavLinks(keys: string[]) {
     if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
     if (aIndex >= 0) return -1;
     if (bIndex >= 0) return 1;
+
+    const aGuideIndex = GUIDE_ORDER.indexOf(a.path);
+    const bGuideIndex = GUIDE_ORDER.indexOf(b.path);
+    if (aGuideIndex >= 0 && bGuideIndex >= 0) return aGuideIndex - bGuideIndex;
+    if (aGuideIndex >= 0) return -1;
+    if (bGuideIndex >= 0) return 1;
 
     return a.title.localeCompare(b.title);
   });

@@ -38,6 +38,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	start := time.Now()
 	cmd := buildAgentCmd(agent, model, task, skillPath)
 	cmd.Dir = skillDir
+	logger.Debug("running agent", "agent", agent, "model", model, "dir", cmd.Dir)
 	// ponytail: capture combined stdout+stderr — token counts may be on stderr
 	output, err := cmd.CombinedOutput()
 	elapsed := time.Since(start)
@@ -48,11 +49,13 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ErrMsg = string(exitErr.Stderr)
 		}
+		logger.Debug("agent output", "output", string(output))
 	}
 
 	result.Timing = &TimingData{
 		DurationMs: int(elapsed.Milliseconds()),
 	}
+	logger.Info("eval completed", "eval", eval.ID, "config", configLabel, "status", result.Status, "duration_ms", result.Timing.DurationMs)
 	result.Timing.TotalTokens = extractTokens(string(output))
 
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")

@@ -20,13 +20,13 @@ func main() {
 }
 
 func run() error {
-	if len(os.Args) < 2 {
+	subcmd, args, verbose := parseGlobalArgs(os.Args[1:])
+	initLogger(verbose)
+
+	if subcmd == "" {
 		printUsage()
 		return fmt.Errorf("no subcommand specified")
 	}
-
-	subcmd := os.Args[1]
-	args := os.Args[2:]
 
 	switch subcmd {
 	case "init":
@@ -59,6 +59,7 @@ Usage:
   skill-eval loop             Full cycle: run → grade → benchmark
 
 Flags:
+  --verbose, -v               Enable structured debug logging to stderr
   --baseline <path|previous>  Baseline for runs (default: none)
   --eval <id>                 Run/Grade a single eval by ID
   --global                    For init: create global config
@@ -92,6 +93,23 @@ func parseModels(raw string) ([]ModelConfig, error) {
 		return nil, fmt.Errorf("invalid --models value: %q", raw)
 	}
 	return models, nil
+}
+
+// parseGlobalArgs extracts the global --verbose/-v flag and returns the
+// subcommand and its remaining arguments.
+func parseGlobalArgs(raw []string) (subcmd string, args []string, verbose bool) {
+	for _, a := range raw {
+		if a == "-v" || a == "--verbose" {
+			verbose = true
+			continue
+		}
+		if subcmd == "" {
+			subcmd = a
+		} else {
+			args = append(args, a)
+		}
+	}
+	return
 }
 
 // --- init ---
@@ -397,7 +415,7 @@ func cmdGrade(args []string) error {
 						legacyDir := evalPath(ws, iter, eval.ID, "")
 						legacyOutput := filepath.Join(legacyDir, config, "outputs")
 						if _, err := os.Stat(legacyOutput); os.IsNotExist(err) {
-							fmt.Printf("  eval %d %s/%s: no outputs, skipping\n", eval.ID, mk, config)
+							logger.Debug("no outputs, skipping", "eval", eval.ID, "model", mk, "config", config)
 							continue
 						}
 						// Use legacy path
@@ -414,7 +432,7 @@ func cmdGrade(args []string) error {
 						})
 						continue
 					}
-					fmt.Printf("  eval %d %s/%s: no outputs, skipping\n", eval.ID, mk, config)
+					logger.Debug("no outputs, skipping", "eval", eval.ID, "model", mk, "config", config)
 					continue
 				}
 

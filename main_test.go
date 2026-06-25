@@ -1,6 +1,7 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -58,6 +59,60 @@ func TestParseModels(t *testing.T) {
 				if got[i] != tt.want[i] {
 					t.Errorf("model[%d] = %+v, want %+v", i, got[i], tt.want[i])
 				}
+			}
+		})
+	}
+}
+
+func TestVerboseFlagParsed(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          []string
+		wantSubcmd  string
+		wantArgs    []string
+		wantVerbose bool
+	}{
+		{
+			name:        "long flag before subcommand",
+			in:          []string{"--verbose", "run", "--eval", "1"},
+			wantSubcmd:  "run",
+			wantArgs:    []string{"--eval", "1"},
+			wantVerbose: true,
+		},
+		{
+			name:        "short flag before subcommand",
+			in:          []string{"-v", "grade"},
+			wantSubcmd:  "grade",
+			wantArgs:    nil,
+			wantVerbose: true,
+		},
+		{
+			name:        "verbose after subcommand",
+			in:          []string{"loop", "--verbose"},
+			wantSubcmd:  "loop",
+			wantArgs:    nil,
+			wantVerbose: true,
+		},
+		{
+			name:        "no flag",
+			in:          []string{"benchmark"},
+			wantSubcmd:  "benchmark",
+			wantArgs:    nil,
+			wantVerbose: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subcmd, args, verbose := parseGlobalArgs(tt.in)
+			if subcmd != tt.wantSubcmd {
+				t.Errorf("subcmd = %q, want %q", subcmd, tt.wantSubcmd)
+			}
+			if !reflect.DeepEqual(args, tt.wantArgs) {
+				t.Errorf("args = %v, want %v", args, tt.wantArgs)
+			}
+			if verbose != tt.wantVerbose {
+				t.Errorf("verbose = %v, want %v", verbose, tt.wantVerbose)
 			}
 		})
 	}

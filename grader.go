@@ -61,10 +61,12 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 			judgeModel = cfg.Defaults.Model
 		}
 
+		logger.Debug("grading", "eval", eval.ID, "assertions", len(llmAssertions))
 		cmd := graderCmdBuilder(judgeAgent, judgeModel, prompt, "")
 		cmd.Dir = outDir
 		output, err := cmd.Output()
 		if err != nil {
+			logger.Warn("judge failed", "error", err)
 			for j, pos := range llmPositions {
 				results[pos] = AssertionResult{
 					Text:     llmAssertions[j],

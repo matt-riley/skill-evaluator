@@ -11,7 +11,30 @@ description: Learn the skill-evaluator CLI commands including init, run, grade, 
 | `run` | Executes all evals. Use `--eval <id>` for just one, or `--baseline previous` to snapshot. |
 | `grade` | Asks the LLM to grade your assertions. Add `--benchmark` to auto-aggregate the stats. |
 | `benchmark` | Wraps up all your grading results into a neat `benchmark.json`. |
-| `loop` | Does it all: run → grade → benchmark! Add `--fix` to auto-refine failing evals. |
+| `loop` | Does it all: run → grade → benchmark! Add `--fix` to auto-refine, `--models` to compare agents. |
+
+### The `--model` flag 🔬
+
+Want to know if your skill helps *every* agent, not just your default? Pass `--models` with a comma-separated list of `agent:model` pairs and skill-eval will run every eval against each one:
+
+```bash
+skill-eval loop --models pi:claude-sonnet,claude,copilot
+```
+
+Each model gets its own with-skill + baseline run, producing per-model stats in `benchmark.json` with a `best_model` and `worst_model`. Spot which agent your skill helps most — and which one needs work! 🔍
+
+> 💡 **Runs in batches of 2** to keep things snappy without hammering APIs. If you've got lots of evals × models, skill-eval warns you before firing off a barrage of agent invocations.
+
+> 🛠️ **Tired of typing it every time?** Drop `models:` into your `.skill-eval.yaml` and `--models` becomes the default.
+
+```yaml
+# .skill-eval.yaml
+models:
+  - agent: pi
+    model: claude-sonnet-4-5
+  - agent: claude
+  - agent: copilot
+```
 
 ### The `--fix` flag 🪄
 

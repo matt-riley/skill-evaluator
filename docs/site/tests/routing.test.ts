@@ -25,7 +25,7 @@ describe("routing", () => {
         "../../../../CHANGELOG.md",
         "../../../../README.md",
       ];
-      const navLinks = buildNavLinks(keys, "readme");
+      const navLinks = buildNavLinks(keys);
 
       expect(navLinks.length).toBe(5);
 

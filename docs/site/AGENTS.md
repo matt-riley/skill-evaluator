@@ -43,7 +43,6 @@ docs/site/
     favicon.ico, favicon.svg
   astro.config.mjs
   tsconfig.json (extends astro/tsconfigs/strict)
-  vitest.config.ts
   wrangler.toml
 ```
 
@@ -55,7 +54,6 @@ docs/site/
 - **Linting**: oxlint. Run `pnpm lint`.
 - **Neo-brutalist design**: thick black borders, colored backgrounds (neo-pink, neo-yellow, neo-blue, neo-green, neo-purple), bold shadows, playful transforms. Defined in `global.css` as Tailwind theme colors.
 - **Markdown source**: the site renders `.md` files from the repo root (4 dirs up) and `docs/adr/`. Agent instruction files (AGENTS.md, CLAUDE.md, CONTEXT.md) are filtered out.
-- **Branch naming for plans**: `advisor/NNN-short-slug` (where NNN is the plan number from `plans/README.md`).
 
 ## Testing
 

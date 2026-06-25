@@ -21,17 +21,10 @@ function formatTitle(name: string): string {
   const lowerName = name.toLowerCase();
   if (TITLE_OVERRIDES[lowerName]) return TITLE_OVERRIDES[lowerName];
 
-  return lowerName
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  return lowerName.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function isChangelog(link: { path: string }): boolean {
-  return link.path === "changelog";
-}
-
-export function buildNavLinks(keys: string[], currentSlug: string) {
+export function buildNavLinks(keys: string[]) {
   const links = keys.map((key) => {
     const path = cleanPath(key);
     const segments = path.split("/");
@@ -40,19 +33,14 @@ export function buildNavLinks(keys: string[], currentSlug: string) {
     return {
       path: path.toLowerCase(),
       title: formatTitle(name),
-      isActive: path.toLowerCase() === currentSlug.toLowerCase(),
       isAdr: path.startsWith("adr/"),
     };
   });
 
   return links.sort((a, b) => {
-    const aIsChangelog = isChangelog(a);
-    const bIsChangelog = isChangelog(b);
-
     // Changelog is always last, even below ADRs.
-    if (aIsChangelog || bIsChangelog) {
-      return aIsChangelog ? 1 : -1;
-    }
+    if (a.path === "changelog") return 1;
+    if (b.path === "changelog") return -1;
 
     if (a.isAdr && !b.isAdr) return 1;
     if (!a.isAdr && b.isAdr) return -1;

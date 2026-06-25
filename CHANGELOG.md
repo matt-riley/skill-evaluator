@@ -5,6 +5,19 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [0.5.0](https://github.com/matt-riley/skill-evaluator/compare/v0.4.0...v0.5.0) (2026-06-25)
+
+
+### Features
+
+* --fix flag for auto-refinement loop (evaluator-optimizer pattern) ([fa85108](https://github.com/matt-riley/skill-evaluator/commit/fa85108dd838c67de579526e30fb0e57d4cd73d8))
+
+
+### Bug Fixes
+
+* **a11y:** modern-web-guidance improvements ([3111adf](https://github.com/matt-riley/skill-evaluator/commit/3111adf52ef1c565c0b358847edc30a1f515dd6f))
+* ignore err from CombinedOutput in fixEval (grading handles failures) ([e4fff21](https://github.com/matt-riley/skill-evaluator/commit/e4fff21e903e93ea5f1e8181ed6500e01a79a2ee))
+
 ## [0.4.0](https://github.com/matt-riley/skill-evaluator/compare/v0.3.0...v0.4.0) (2026-06-25)
 
 

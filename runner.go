@@ -260,7 +260,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		start := time.Now()
 		cmd := buildAgentCmd(agent, model, task, skillPath)
 		cmd.Dir = skillDir
-		output, err := cmd.CombinedOutput()
+		output, _ := cmd.CombinedOutput()
 		elapsed := time.Since(start)
 
 		// Save timing

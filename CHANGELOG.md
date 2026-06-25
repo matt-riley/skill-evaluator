@@ -5,6 +5,23 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [0.6.0](https://github.com/matt-riley/skill-evaluator/compare/v0.5.0...v0.6.0) (2026-06-25)
+
+
+### Features
+
+* --models flag for cross-model benchmarking ([9fd5b45](https://github.com/matt-riley/skill-evaluator/commit/9fd5b4562e258dc70e72b58142eaf04d7ceff476))
+* pre-push-guard pi extension ([500b005](https://github.com/matt-riley/skill-evaluator/commit/500b0052161deeea2e140c9f59e948b8859566ee))
+* pre-push-guard shows live status widget while checks run ([ff5e658](https://github.com/matt-riley/skill-evaluator/commit/ff5e658fd4d0e7fd26e0827aa69c58abe5ff0981))
+
+
+### Bug Fixes
+
+* use &lt;video&gt; not ![]() for auto-fixing demo mp4 ([6d9c5e3](https://github.com/matt-riley/skill-evaluator/commit/6d9c5e3fc3f96c0e25d435fb793f090044a7e3bb))
+* use &lt;video&gt; not ![]() for cross-model demo mp4 ([8cdceb8](https://github.com/matt-riley/skill-evaluator/commit/8cdceb8263e296441ad8b65112988d504647cb49))
+* use agent:model pairs in all cross-model examples, regenerate VHS ([fd1a283](https://github.com/matt-riley/skill-evaluator/commit/fd1a2833b69f94223eaabfed0364f60354e73530))
+* use proper &lt;video&gt;&lt;/video&gt; closing tags, agent:model pairs throughout cross-model guide ([8d3cbf5](https://github.com/matt-riley/skill-evaluator/commit/8d3cbf50660338c7ac77c6d9dae64e0ea5d39009))
+
 ## [0.5.0](https://github.com/matt-riley/skill-evaluator/compare/v0.4.0...v0.5.0) (2026-06-25)
 
 

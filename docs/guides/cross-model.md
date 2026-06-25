@@ -73,7 +73,7 @@ Over time, you'll spot patterns in how different models interpret your skill ins
 Cross-model and auto-fix work together seamlessly:
 
 ```bash
-skill-eval loop --models pi,claude --fix --max-fix-attempts 2
+skill-eval loop --models pi:claude-sonnet,claude:opus-4-8 --fix --max-fix-attempts 2
 ```
 
 Each model gets its own independent fix phase. If pi passes on the first attempt but claude needs two fix rounds before converging, you'll see that in the output — and in the benchmark. That tells you claude's baseline needs more attention than pi's.

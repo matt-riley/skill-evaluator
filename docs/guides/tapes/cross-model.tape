@@ -19,7 +19,7 @@ Type "# Let's see how our skill performs across three different agents..."
 Sleep 1s
 Enter
 Sleep 300ms
-Type "skill-eval loop --models pi:claude-sonnet,claude,copilot"
+Type "skill-eval loop --models pi:claude-sonnet,claude:opus-4-8,copilot:gpt-5"
 Sleep 400ms
 Enter
 Sleep 14s

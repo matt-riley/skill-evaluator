@@ -43,7 +43,7 @@ case "$1" in
 
     # Simulate per-model results
     for m in "${models[@]}"; do
-      if [ "$m" = "claude" ]; then
+      if [ "$m" = "claude:opus-4-8" ]; then
         echo "  eval 1 $m/with_skill... 2/3 passed"
         echo "  eval 1 $m/baseline... 1/3 passed"
         echo "  eval 2 $m/with_skill... 1/2 passed"
@@ -61,8 +61,8 @@ case "$1" in
     sleep 0.5
     echo "  models:"
     echo "    pi-claude-sonnet:   +33% (best)"
-    echo "    claude:             +17% (worst)"
-    echo "    copilot:            +33%"
+    echo "    claude-opus-4-8:    +17% (worst)"
+    echo "    copilot-gpt-5:      +33%"
     echo ""
     echo "Loop complete."
     ;;

@@ -59,7 +59,7 @@ This magic command handles the whole cycle for you:
 
 > 💡 **Want the tool to fix failures automatically?** Try `skill-eval loop --fix` and watch it re-run failing evals with the judge's feedback as a critique! It'll keep refining until things pass or it hits the attempt limit. Perfect for those "almost there" situations.
 
-> 🔬 **Shipping to multiple runtimes?** `skill-eval loop --models pi,claude,copilot` runs every eval against each agent and tells you which one your skill helps most. Great for runtime-agnostic skills!
+> 🔬 **Shipping to multiple runtimes?** `skill-eval loop --models pi:claude-sonnet,claude:opus-4-8,copilot` runs every eval against each agent and tells you which one your skill helps most. Great for runtime-agnostic skills!
 
 ### 4. Review the results 🔍
 

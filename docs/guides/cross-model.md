@@ -5,7 +5,7 @@ description: Run your evals against multiple agents at once — pi, claude, copi
 
 # 🔬 Cross-Model Benchmarking
 
-Your skill works great in **pi**. But does it help **claude**? What about **copilot**? If you're building a skill meant to be runtime-agnostic, you need to know it pulls its weight *everywhere*.
+Your skill works great in **pi**. But does it help **claude**? What about **copilot**? If you're building a skill meant to be runtime-agnostic, you need to know it pulls its weight *everywhere* — including across the models each agent supports.
 
 Cross-model benchmarking runs every eval against every agent you specify — in one command. You get a clean per-model breakdown so you can spot exactly where to focus your tuning.
 
@@ -16,12 +16,12 @@ Cross-model benchmarking runs every eval against every agent you specify — in 
 Pass `--models` with a comma-separated list of `agent:model` pairs:
 
 ```bash
-skill-eval loop --models pi:claude-sonnet,claude,copilot
+skill-eval loop --models pi:claude-sonnet,claude:opus-4-8,copilot:gpt-5
 ```
 
 skill-eval runs the full `run → grade → benchmark` cycle for each model. Each one gets its own with-skill and baseline run, and the results land side-by-side in `benchmark.json`.
 
-<video src="/guides/cross-model.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" />
+<video src="/guides/cross-model.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
 
 ---
 
@@ -33,11 +33,11 @@ The benchmark tells you at a glance who's winning:
 {
   "models": {
     "pi-claude-sonnet": { "delta": { "pass_rate": 0.33 } },
-    "claude":           { "delta": { "pass_rate": 0.17 } },
-    "copilot":          { "delta": { "pass_rate": 0.33 } }
+    "claude-opus-4-8":  { "delta": { "pass_rate": 0.17 } },
+    "copilot-gpt-5":    { "delta": { "pass_rate": 0.33 } }
   },
   "best_model":  "pi-claude-sonnet",
-  "worst_model": "claude"
+  "worst_model": "claude-opus-4-8"
 }
 ```
 
@@ -54,13 +54,13 @@ Three signals jump out:
 Here's the real power move. Run with `--models` across iterations:
 
 ```
-Run 1: pi +33%,  claude +17%,  copilot +33%
+Run 1: pi-claude-sonnet +33%,  claude-opus-4-8 +17%,  copilot-gpt-5 +33%
        → Claude's weak at chart-related assertions. Tweak your SKILL.md.
 
-Run 2: pi +34%,  claude +28%,  copilot +32%
+Run 2: pi-claude-sonnet +34%,  claude-opus-4-8 +28%,  copilot-gpt-5 +32%
        → Claude improved! Copilot slipped slightly. Another tweak.
 
-Run 3: pi +34%,  claude +31%,  copilot +36%
+Run 3: pi-claude-sonnet +34%,  claude-opus-4-8 +31%,  copilot-gpt-5 +36%
        → All above 30%. Converging nicely. Ship it! 🚀
 ```
 
@@ -90,7 +90,9 @@ models:
   - agent: pi
     model: claude-sonnet-4-5
   - agent: claude
+    model: opus-4-8
   - agent: copilot
+    model: gpt-5
 ```
 
 Config models become the default for every `run`, `grade`, and `loop` command. CLI `--models` always wins when both are present.

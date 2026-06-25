@@ -46,7 +46,7 @@ cat <skill-name>-workspace/iteration-1/grading.json | jq .
 
 Look for `"result": "FAIL"` entries. The `reasoning` field tells you *why* the judge failed an assertion — that's your cue for what to address in feedback.
 
-<video src="/guides/feedback-loop.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" />
+<video src="/guides/feedback-loop.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
 
 ---
 

@@ -21,7 +21,7 @@ function linkClass(active: boolean, accent: string) {
 }
 ---
 
-<a href="/" class={linkClass(currentSlug === 'readme', 'blue')}>
+<a href="/" class={linkClass(currentSlug === 'readme', 'blue')} aria-current={currentSlug === 'readme' ? 'page' : undefined}>
   🏠 Home
 </a>
 
@@ -33,7 +33,7 @@ function linkClass(active: boolean, accent: string) {
   <ul class="space-y-4 mt-2">
     {docLinks.map(link => (
       <li>
-        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'blue')}>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'blue')} aria-current={link.path === currentSlug ? 'page' : undefined}>
           ✨ {link.title}
         </a>
       </li>
@@ -49,7 +49,7 @@ function linkClass(active: boolean, accent: string) {
   <ul class="space-y-4 mt-2">
     {guideLinks.map(link => (
       <li>
-        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'pink')}>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'pink')} aria-current={link.path === currentSlug ? 'page' : undefined}>
           {link.title}
         </a>
       </li>
@@ -65,7 +65,7 @@ function linkClass(active: boolean, accent: string) {
   <ul class="space-y-4 mt-2">
     {adrLinks.map(link => (
       <li>
-        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'green') + ' truncate'} title={link.title}>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'green') + ' truncate'} title={link.title} aria-current={link.path === currentSlug ? 'page' : undefined}>
           {link.title}
         </a>
       </li>

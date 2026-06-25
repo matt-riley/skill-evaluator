@@ -16,6 +16,22 @@ body {
   background-size: 32px 32px;
 }
 
+/* Focus ring: high-contrast, offset, matches neo-brutalist vibe */
+:where(a:any-link, button, [tabindex]):focus-visible {
+  outline: 4px solid #ff6b9e;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Respect reduced-motion preference — disable all transitions/animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .docs-prose {
   @apply prose max-w-none;
 
@@ -27,6 +43,7 @@ body {
     @apply text-4xl font-extrabold tracking-tight text-black mt-16 mb-8;
     @apply bg-neo-yellow inline-block px-4 py-2 rounded-xl border-4 border-black;
     @apply shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1;
+    text-wrap: balance;
   }
   & h3 {
     @apply text-3xl font-bold text-black mt-10;

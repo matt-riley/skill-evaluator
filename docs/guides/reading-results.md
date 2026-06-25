@@ -14,19 +14,31 @@ After `skill-eval loop` finishes, two files tell you everything you need to know
 This is your scoreboard. Open it with:
 
 ```bash
-cat <skill-name>-workspace/iteration-1/benchmark.json | jq .summary
+cat <skill-name>-workspace/iteration-1/benchmark.json | jq .
 ```
 
-You'll see something like this:
+For a single-model run, you'll see something like this:
 
 ```json
 {
-  "total_evals": 3,
-  "pass_rate_with_skill": 0.89,
-  "pass_rate_baseline": 0.56,
-  "delta": "+33%",
-  "avg_duration_with_skill_s": 18.4,
-  "avg_duration_baseline_s": 14.2
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": { "mean": 0.89, "stddev": 0.05 },
+      "time_seconds": { "mean": 18.4, "stddev": 2.1 },
+      "tokens": { "mean": 1250, "stddev": 120 }
+    },
+    "baseline": {
+      "pass_rate": { "mean": 0.56, "stddev": 0.08 },
+      "time_seconds": { "mean": 14.2, "stddev": 1.5 },
+      "tokens": { "mean": 980, "stddev": 90 }
+    },
+    "delta": {
+      "pass_rate": 0.33,
+      "time_seconds": 4.2,
+      "tokens": 270
+    }
+  },
+  "generated_at": "2026-06-25T16:30:00Z"
 }
 ```
 
@@ -36,12 +48,14 @@ You'll see something like this:
 
 | Field | What it's telling you |
 |---|---|
-| `pass_rate_with_skill` | Fraction of assertions that passed *when your skill was active* |
-| `pass_rate_baseline` | Same thing, but without your skill (the control group) |
-| `delta` | The difference — this is the number you're trying to maximise! |
-| `avg_duration_*` | Average wall-clock time per eval, with and without skill |
+| `run_summary.with_skill` | Average stats across all evals *when your skill was active* |
+| `run_summary.baseline` | Same stats, but without your skill (the control group) |
+| `run_summary.delta` | The difference — this is the number you're trying to maximise! |
+| `pass_rate` | Fraction of assertions that passed (mean and stddev) |
+| `time_seconds` | Average wall-clock time per eval |
+| `tokens` | Average total tokens consumed per eval |
 
-> 💡 **A positive delta is the goal.** If `delta` is `+0%` or negative, your skill isn't helping (or it's actively hurting). Time to revisit your instructions!
+> 💡 **A positive `pass_rate` delta is the goal.** If it's `+0%` or negative, your skill isn't helping (or it's actively hurting). Time to revisit your instructions!
 
 ### Tracking progress across iterations 🔄
 
@@ -58,33 +72,25 @@ When a previous iteration exists, `benchmark.json` also includes a `previous_ite
 }
 ```
 
-`iteration_delta` is the current iteration's delta minus the previous iteration's delta. A **positive `pass_rate`** means your skill improved relative to baseline since the last run. A negative value means it got worse — a signal that a recent change may have hurt performance.
+`iteration_delta` is the current iteration's delta minus the previous iteration's delta. A **positive `pass_rate`** means your skill improved relative to baseline since the last run. A negative value means it got worse — a signal that a recent change may have hurt performance. Keep an eye on this to make sure you're moving in the right direction! 📈
 
 ---
 
 ## Per-eval breakdown 🔬
 
-The `evals` section of `benchmark.json` shows the verdict for every individual eval:
+For the verdict on every individual eval, dig into the per-eval directories rather than `benchmark.json`. Each eval directory has its own `grading.json`:
 
 ```bash
-cat <skill-name>-workspace/iteration-1/benchmark.json | jq '.evals'
+cat <skill-name>-workspace/iteration-1/eval-1/with_skill/grading.json | jq .
 ```
 
-```json
-{
-  "eval-1": { "with_skill": "FAIL", "baseline": "FAIL", "delta": "none" },
-  "eval-2": { "with_skill": "PASS", "baseline": "PASS", "delta": "none" },
-  "eval-3": { "with_skill": "PASS", "baseline": "FAIL", "delta": "+skill" }
-}
-```
+Look for these patterns:
 
-Here's how to read the `delta` column:
-
-| Delta value | What it means |
+| Pattern | What it means |
 |---|---|
-| `+skill` | 🌟 Your skill turned a FAIL into a PASS — this is what you're looking for! |
-| `none` | Neither better nor worse — skill made no difference here. |
-| `-skill` | ⚠️ Skill turned a PASS into a FAIL. Your instructions may be over-constraining the agent. |
+| With-skill PASS, baseline FAIL | 🌟 Your skill turned a failure into a success — this is what you're looking for! |
+| Both PASS or both FAIL | Neither better nor worse — skill made no visible difference here. |
+| With-skill FAIL, baseline PASS | ⚠️ Skill over-constrained the agent. Your instructions may be too prescriptive. |
 
 ---
 

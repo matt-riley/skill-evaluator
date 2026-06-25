@@ -5,6 +5,17 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.0.0](https://github.com/matt-riley/skill-evaluator/compare/v0.6.0...v1.0.0) (2026-06-25)
+
+
+### Features
+
+* add --verbose flag and structured logging ([e6e41b9](https://github.com/matt-riley/skill-evaluator/commit/e6e41b9bf078e189420103821d701e07c1a3aa83))
+* add cross-iteration delta to benchmark.json ([e85d0d7](https://github.com/matt-riley/skill-evaluator/commit/e85d0d7bb60471fa4925ee3516c81f0bf9e2262d))
+* add deterministic file/text assertion matchers ([5011275](https://github.com/matt-riley/skill-evaluator/commit/5011275a3170355e0b6eede0a07302deeb1b31c3))
+* add iteration lockfile and --resume ([b39f004](https://github.com/matt-riley/skill-evaluator/commit/b39f0046c257750fd01e7f982ec96a254290c626))
+* validate config against JSON schema ([cf9b3f4](https://github.com/matt-riley/skill-evaluator/commit/cf9b3f4a5597908e6da4ff7cc27281629769d341))
+
 ## [0.6.0](https://github.com/matt-riley/skill-evaluator/compare/v0.5.0...v0.6.0) (2026-06-25)
 
 

@@ -6,17 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
-
-// cmdBuilder builds an exec.Cmd for the judge. Swapped in tests to avoid shelling out.
-type cmdBuilder func(agent, model, task, skillPath string) *exec.Cmd
-
-// graderCmdBuilder is the live command builder; tests may override it.
-var graderCmdBuilder cmdBuilder = buildAgentCmd
 
 // gradeEval shells out to the judge agent to grade assertions against outputs.
 func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, configLabel string) (*GradingFile, error) {
@@ -62,7 +55,7 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 		}
 
 		logger.Debug("grading", "eval", eval.ID, "assertions", len(llmAssertions))
-		cmd := graderCmdBuilder(judgeAgent, judgeModel, prompt, "")
+		cmd := buildAgentCmd(judgeAgent, judgeModel, prompt, "")
 		cmd.Dir = outDir
 		output, err := cmd.Output()
 		if err != nil {

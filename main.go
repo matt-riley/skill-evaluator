@@ -471,38 +471,27 @@ func cmdGrade(args []string) error {
 		for _, m := range models {
 			mk := m.Key()
 			for _, config := range []string{"with_skill", "baseline"} {
-				evalDir := evalPath(ws, iter, eval.ID, mk)
-				outputDir := filepath.Join(evalDir, config, "outputs")
-
-				if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-					// Fall back to legacy (no model key) path for single-model backward compat
+				// Default to the model-keyed layout; fall back to the legacy
+				// single-model (no model key) layout for backward compat.
+				gradeKey := mk
+				modelOutput := filepath.Join(evalPath(ws, iter, eval.ID, mk), config, "outputs")
+				if _, err := os.Stat(modelOutput); os.IsNotExist(err) {
 					if mk == m.Agent && len(models) == 1 {
-						legacyDir := evalPath(ws, iter, eval.ID, "")
-						legacyOutput := filepath.Join(legacyDir, config, "outputs")
-						if _, err := os.Stat(legacyOutput); os.IsNotExist(err) {
+						legacyOutput := filepath.Join(evalPath(ws, iter, eval.ID, ""), config, "outputs")
+						if _, err := os.Stat(legacyOutput); err == nil {
+							gradeKey = ""
+						} else {
 							logger.Debug("no outputs, skipping", "eval", eval.ID, "model", mk, "config", config)
 							continue
 						}
-						// Use legacy path
-						gf, err := gradeEval(ctx, cfg, eval, ws, iter, "", config)
-						if err != nil {
-							fmt.Printf("error: %v\n", err)
-							continue
-						}
-						fmt.Printf("  eval %d %s... %d/%d passed\n", eval.ID, config, gf.Summary.Passed, gf.Summary.Total)
-						results = append(results, &RunResult{
-							EvalID:  eval.ID,
-							Config:  config,
-							Grading: gf,
-						})
+					} else {
+						logger.Debug("no outputs, skipping", "eval", eval.ID, "model", mk, "config", config)
 						continue
 					}
-					logger.Debug("no outputs, skipping", "eval", eval.ID, "model", mk, "config", config)
-					continue
 				}
 
 				fmt.Printf("  eval %d %s/%s... ", eval.ID, mk, config)
-				gf, err := gradeEval(ctx, cfg, eval, ws, iter, mk, config)
+				gf, err := gradeEval(ctx, cfg, eval, ws, iter, gradeKey, config)
 				if err != nil {
 					fmt.Printf("error: %v\n", err)
 					continue
@@ -510,7 +499,7 @@ func cmdGrade(args []string) error {
 				fmt.Printf("%d/%d passed\n", gf.Summary.Passed, gf.Summary.Total)
 				results = append(results, &RunResult{
 					EvalID:  eval.ID,
-					Model:   mk,
+					Model:   gradeKey,
 					Config:  config,
 					Grading: gf,
 				})

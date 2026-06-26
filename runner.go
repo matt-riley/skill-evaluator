@@ -33,7 +33,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	model := cfg.Defaults.Model
 
 	// Build the task prompt following the agentskills.io convention
-	task := buildRunPrompt(skillPath, eval, outDir)
+	task := buildPrompt(skillPath, eval, outDir, "")
 
 	start := time.Now()
 	cmd := buildAgentCmd(agent, model, task, skillPath)
@@ -45,11 +45,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 
 	if err != nil {
 		result.Status = "failed"
-		result.ErrMsg = err.Error()
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			result.ErrMsg = string(exitErr.Stderr)
-		}
-		logger.Debug("agent output", "output", string(output))
+		logger.Debug("agent run failed", "error", err, "output", string(output))
 	}
 
 	result.Timing = &TimingData{
@@ -61,13 +57,6 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")
 	timingJSON, _ := json.MarshalIndent(result.Timing, "", "  ")
 	_ = os.WriteFile(timingPath, timingJSON, 0o644)
-
-	entries, _ := os.ReadDir(outDir)
-	for _, e := range entries {
-		if !e.IsDir() {
-			result.Outputs = append(result.Outputs, e.Name())
-		}
-	}
 
 	return result, nil
 }
@@ -82,13 +71,9 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 	return ""
 }
 
-// buildRunPrompt follows the agentskills.io eval run convention.
-func buildRunPrompt(skillPath string, eval Eval, outDir string) string {
-	return buildPrompt(skillPath, eval, outDir, "")
-}
-
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
-func buildAgentCmd(agent, model, task, skillPath string) *exec.Cmd {
+// ponytail: var (not func) so tests can swap it without a separate seam.
+var buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
 	switch agent {
 	case "pi":
 		// pi docs: -p (print), --no-session (ephemeral), --no-context-files (clean context)
@@ -182,11 +167,6 @@ func readEvals(skillDir string) (*EvalFile, error) {
 	return &ef, nil
 }
 
-// buildFixPrompt creates a task prompt with critique from a previous failed attempt.
-func buildFixPrompt(skillPath string, eval Eval, outDir string, critique string) string {
-	return buildPrompt(skillPath, eval, outDir, critique)
-}
-
 func buildPrompt(skillPath string, eval Eval, outDir, critique string) string {
 	var b strings.Builder
 	b.WriteString("Execute this task in non-interactive mode (do not ask questions, do not wait for confirmation).\n")
@@ -252,7 +232,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		}
 
 		// Run agent with critique
-		task := buildFixPrompt(skillPath, eval, outDir, critique)
+		task := buildPrompt(skillPath, eval, outDir, critique)
 		start := time.Now()
 		cmd := buildAgentCmd(agent, model, task, skillPath)
 		cmd.Dir = skillDir

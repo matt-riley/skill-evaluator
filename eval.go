@@ -88,9 +88,7 @@ type RunResult struct {
 	Model   string // model key (e.g. "pi-claude-sonnet"), empty for single-model compat
 	Config  string // "with_skill" or "baseline"
 	Status  string // "ok" or "failed"
-	ErrMsg  string
 	Timing  *TimingData
-	Outputs []string // relative paths within the output dir
 	Grading *GradingFile
 }
 
@@ -138,6 +136,9 @@ type ModelBenchmark struct {
 
 // BenchmarkFile is written to benchmark.json.
 type BenchmarkFile struct {
+	// RunSummary is the legacy single-model format. Kept only to read
+	// benchmark.json files written by older binaries; current writes
+	// always populate Models instead.
 	RunSummary struct {
 		WithSkill RunSummary `json:"with_skill"`
 		Baseline  RunSummary `json:"baseline"`

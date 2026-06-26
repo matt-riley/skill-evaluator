@@ -22,32 +22,23 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 
 	bf := BenchmarkFile{
 		GeneratedAt: time.Now(),
+		Models:      map[string]ModelBenchmark{},
 	}
 
-	if len(byModel) == 1 {
-		// Single model (or legacy) — use flat summary format
-		for _, rs := range byModel {
-			bf.RunSummary.WithSkill, bf.RunSummary.Baseline = splitAndAggregate(rs)
-			bf.RunSummary.Delta = computeDelta(bf.RunSummary.WithSkill, bf.RunSummary.Baseline)
-		}
-	} else {
-		// Multi-model — use models map
-		bf.Models = map[string]ModelBenchmark{}
-		bestDelta := -999.0
-		worstDelta := 999.0
-		for mk, rs := range byModel {
-			ws, bs := splitAndAggregate(rs)
-			mb := ModelBenchmark{WithSkill: ws, Baseline: bs, Delta: computeDelta(ws, bs)}
-			bf.Models[mk] = mb
+	bestDelta := -999.0
+	worstDelta := 999.0
+	for mk, rs := range byModel {
+		ws, bs := splitAndAggregate(rs)
+		mb := ModelBenchmark{WithSkill: ws, Baseline: bs, Delta: computeDelta(ws, bs)}
+		bf.Models[mk] = mb
 
-			if mb.Delta.PassRate > bestDelta {
-				bestDelta = mb.Delta.PassRate
-				bf.BestModel = mk
-			}
-			if mb.Delta.PassRate < worstDelta {
-				worstDelta = mb.Delta.PassRate
-				bf.WorstModel = mk
-			}
+		if mb.Delta.PassRate > bestDelta {
+			bestDelta = mb.Delta.PassRate
+			bf.BestModel = mk
+		}
+		if mb.Delta.PassRate < worstDelta {
+			worstDelta = mb.Delta.PassRate
+			bf.WorstModel = mk
 		}
 	}
 
@@ -57,14 +48,10 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 	}
 	if prev != nil {
 		bf.PreviousIteration = prevIter
-		if len(bf.Models) == 0 {
-			bf.IterationDelta = subtractDeltas(bf.RunSummary.Delta, prev.RunSummary.Delta)
-		} else {
-			bf.IterationDelta = subtractDeltas(
-				averageDelta(modelDeltas(bf.Models)),
-				averageDelta(modelDeltas(prev.Models)),
-			)
-		}
+		bf.IterationDelta = subtractDeltas(
+			averageDelta(modelDeltas(bf.Models)),
+			averageDelta(modelDeltas(prev.allModels())),
+		)
 	}
 
 	if err := ensureDir(iterationPath(workspace, iteration)); err != nil {
@@ -97,6 +84,20 @@ func loadPreviousBenchmark(workspace string, currentIter int) (int, *BenchmarkFi
 		return i, &bf, nil
 	}
 	return 0, nil, nil
+}
+
+// allModels returns the per-model benchmarks: Models if present (current
+// format), else a single-entry map synthesized from the legacy RunSummary
+// field, so old benchmark.json files on disk still feed the delta calc.
+func (bf *BenchmarkFile) allModels() map[string]ModelBenchmark {
+	if len(bf.Models) > 0 {
+		return bf.Models
+	}
+	return map[string]ModelBenchmark{"_": {
+		WithSkill: bf.RunSummary.WithSkill,
+		Baseline:  bf.RunSummary.Baseline,
+		Delta:     bf.RunSummary.Delta,
+	}}
 }
 
 // modelDeltas extracts the delta for each model in a ModelBenchmark map.

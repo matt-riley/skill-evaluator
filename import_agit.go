@@ -76,8 +76,6 @@ type agitCounts struct {
 	Unchanged int `json:"unchanged"`
 }
 
-const cliJSONEnvelopeKey = "data"
-
 // --- agit access (shell-out) ---
 
 // agitCmd is swappable in tests.

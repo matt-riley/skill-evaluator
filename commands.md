@@ -13,6 +13,7 @@ description: Learn the skill-evaluator CLI commands including init, run, grade, 
 | `benchmark` | Wraps up all your grading results into a neat `benchmark.json`. |
 | `report` | Generates a beautiful HTML report of your benchmark results! Add `--llm-suggestions` for AI coach notes. 📊 |
 | `loop` | Does it all: run → grade → benchmark! Add `--fix` to auto-refine, `--models` to compare agents. |
+| `import-agit` | Converts your interactive agit sessions into an evals.json corpus. Magic! 🪄 |
 
 ### The `--model` flag 🔬
 
@@ -70,6 +71,18 @@ skill-eval loop --resume
 ```
 
 If the latest iteration is already complete, `--resume` tells you there's nothing to pick up. And `skill-eval grade` will refuse to grade an incomplete iteration — finish it with `--resume` first!
+
+### Turn Sessions into Evals with `import-agit` 🪄
+
+Writing evals by hand is great, but what if you could just do the work and let `skill-eval` build the eval for you? The `import-agit` command takes a recorded `agit` session and magically turns each big step into an eval!
+
+```bash
+skill-eval import-agit                 # Imports your most recent session
+skill-eval import-agit --session 1234  # Imports a specific session
+skill-eval import-agit --force         # Overwrite existing evals!
+```
+
+This is perfect for kickstarting a brand new eval suite. Check out the [Importing Sessions guide](guides/importing-agit-sessions.md) for the full breakdown!
 
 ### Share it with a Beautiful HTML Report 📊
 

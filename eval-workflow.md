@@ -28,6 +28,7 @@ Running `skill-eval init` creates a handy `evals/evals.json` file in your skill 
 - **Edge cases matter!** Throw in a tricky edge-case prompt to see how your skill handles it.
 - **Keep it real!** Mention real file paths, column names, and context.
 - **Start small!** Just 2-3 test cases are plenty for your first loop.
+- **Import your work!** Had an awesome interactive session? Use `skill-eval import-agit` to magically transform it into test cases! 🪄
 
 ### 2. Write your assertions ✅
 

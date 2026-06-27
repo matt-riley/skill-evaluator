@@ -5,6 +5,21 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.0.0](https://github.com/matt-riley/skill-evaluator/compare/v1.0.0...v1.0.0) (2026-06-27)
+
+
+### Features
+
+* add --baseline-only flag to run and loop commands ([94771cb](https://github.com/matt-riley/skill-evaluator/commit/94771cb7479d616df503468b3535573667d3bbd5))
+* add --llm-suggestions and high-baseline eval-quality hint ([26cca28](https://github.com/matt-riley/skill-evaluator/commit/26cca28cbd42e60a9fb9e25fce1692793b413dbc))
+* add HTML report command with actionable suggestions ([3ca892c](https://github.com/matt-riley/skill-evaluator/commit/3ca892c583b8e060b90e9d6ae14d8b4a76865856))
+
+
+### Bug Fixes
+
+* restore cwd in tests with t.Chdir to stop getwd failures ([0a17eec](https://github.com/matt-riley/skill-evaluator/commit/0a17eec5f4463393b414d112c5cecafb447eddd1))
+* use config/evals topology for benchmark aggregation ([e93b122](https://github.com/matt-riley/skill-evaluator/commit/e93b122f73b03d817e8a0f3432e62230ae330fdd))
+
 ## [1.0.0](https://github.com/matt-riley/skill-evaluator/compare/v0.6.0...v1.0.0) (2026-06-25)
 
 

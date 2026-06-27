@@ -57,9 +57,7 @@ func TestCmdReportGeneratesHTML(t *testing.T) {
 		t.Fatalf("write benchmark: %v", err)
 	}
 
-	if err := os.Chdir(skillDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(skillDir)
 
 	if err := cmdReport(nil); err != nil {
 		t.Fatalf("cmdReport failed: %v", err)

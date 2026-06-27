@@ -107,9 +107,7 @@ func TestCmdBenchmarkReadsModelKeyedPaths(t *testing.T) {
 		}
 	}
 
-	if err := os.Chdir(skillDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(skillDir)
 
 	if err := cmdBenchmark([]string{"--models", "pi:deepseek/deepseek-v4-flash"}); err != nil {
 		t.Fatalf("cmdBenchmark failed: %v", err)

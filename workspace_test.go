@@ -127,16 +127,9 @@ func TestGradeBlocksIncompleteLock(t *testing.T) {
 		t.Fatalf("write lock: %v", err)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	defer func() { _ = os.Chdir(cwd) }()
-	if err := os.Chdir(skillDir); err != nil {
-		t.Fatalf("chdir skill: %v", err)
-	}
+	t.Chdir(skillDir)
 
-	err = cmdGrade(nil)
+	err := cmdGrade(nil)
 	if err == nil {
 		t.Fatal("cmdGrade expected error for running lock")
 	}

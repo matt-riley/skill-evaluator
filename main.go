@@ -57,9 +57,11 @@ Usage:
   skill-eval init             Scaffold evals/evals.json + workspace
   skill-eval run              Run all evals (with-skill and baseline)
   skill-eval grade            Grade all runs in the current iteration
-  skill-eval benchmark        Aggregate results into benchmark.json
-  skill-eval report           Generate an HTML report from benchmark.json
-  skill-eval loop             Full cycle: run → grade → benchmark
+  skill-eval benchmark                Aggregate results into benchmark.json
+  skill-eval report [--iteration N]
+                      [--llm-suggestions]
+                                      Generate an HTML report from benchmark.json
+  skill-eval loop                     Full cycle: run → grade → benchmark
 
 Flags:
   --verbose, -v               Enable structured debug logging to stderr

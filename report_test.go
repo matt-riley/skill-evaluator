@@ -94,6 +94,23 @@ func TestBuildSuggestionsHandlesEmptyData(t *testing.T) {
 	}
 }
 
+func TestBuildSuggestionsHighBaselineWarning(t *testing.T) {
+	data := &ReportData{
+		Models: map[string]ModelBenchmark{
+			"m1": {
+				WithSkill: RunSummary{PassRate: Stats{Mean: 0.98}},
+				Baseline:  RunSummary{PassRate: Stats{Mean: 0.97}},
+				Delta:     Delta{PassRate: 0.01},
+			},
+		},
+	}
+	suggestions := buildSuggestions(data)
+	got := strings.Join(suggestions, " ")
+	if !strings.Contains(got, "Baseline already passes nearly all evals") {
+		t.Fatalf("expected high-baseline warning, got: %v", suggestions)
+	}
+}
+
 func TestBuildSuggestionsRegressionWarning(t *testing.T) {
 	data := &ReportData{
 		Models: map[string]ModelBenchmark{

@@ -22,6 +22,7 @@ type ReportData struct {
 	BestModel         string
 	WorstModel        string
 	Suggestions       []string
+	LLMSuggestions    string
 }
 
 const reportTemplate = `<!doctype html>
@@ -42,6 +43,7 @@ const reportTemplate = `<!doctype html>
     .summary { background: #f6f8fa; padding: 1rem; border-radius: 6px; margin: 1rem 0; }
     .suggestions { margin: 1rem 0; padding-left: 1.25rem; }
     .suggestions li { margin: .5rem 0; }
+    .llm-notes { background: #f6f8fa; padding: 1rem; border-radius: 6px; white-space: pre-wrap; }
     small { color: #57606a; }
   </style>
 </head>
@@ -98,6 +100,11 @@ const reportTemplate = `<!doctype html>
   </ul>
 
   <p><small>Raw data: <code>benchmark.json</code> in the same iteration directory.</small></p>
+
+  {{if .LLMSuggestions}}
+  <h2>LLM Coach Notes</h2>
+  <div class="llm-notes">{{.LLMSuggestions}}</div>
+  {{end}}
 </body>
 </html>`
 
@@ -105,6 +112,7 @@ const reportTemplate = `<!doctype html>
 func cmdReport(args []string) error {
 	fs := flag.NewFlagSet("report", flag.ContinueOnError)
 	iterFlag := fs.Int("iteration", 0, "Target iteration (default: latest)")
+	llmFlag := fs.Bool("llm-suggestions", false, "Ask the judge agent for additional suggestions")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -112,6 +120,11 @@ func cmdReport(args []string) error {
 	skillDir, err := detectSkillDir()
 	if err != nil {
 		return err
+	}
+
+	cfg, err := LoadConfig(skillDir)
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
 	}
 
 	ef, err := readEvals(skillDir)
@@ -145,6 +158,15 @@ func cmdReport(args []string) error {
 	}
 	data.Suggestions = buildSuggestions(data)
 
+	if *llmFlag {
+		notes, err := llmCoachNotes(cfg, data, bf)
+		if err != nil {
+			data.Suggestions = append(data.Suggestions, fmt.Sprintf("LLM coach notes unavailable: %v", err))
+		} else {
+			data.LLMSuggestions = notes
+		}
+	}
+
 	out, err := renderReport(data)
 	if err != nil {
 		return fmt.Errorf("rendering report: %w", err)
@@ -171,6 +193,45 @@ func loadBenchmarkFile(workspace string, iter int) (*BenchmarkFile, error) {
 		return nil, err
 	}
 	return &bf, nil
+}
+
+// llmCoachNotes asks the configured judge agent for extra coaching advice.
+func llmCoachNotes(cfg *Config, data *ReportData, bf *BenchmarkFile) (string, error) {
+	payload, err := json.MarshalIndent(bf, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
+	prompt := fmt.Sprintf(`You are reviewing a skill-evaluation benchmark for the skill %q, iteration %d.
+
+The benchmark data below shows how models performed with and without the skill, plus deltas and the previous iteration.
+
+Give concise, actionable advice for the skill author. Focus on:
+1. Whether the evals look discriminative (does the skill actually help, or are they too easy?)
+2. What the next iteration should test or change.
+3. Any suspect patterns (e.g., high baseline, negative skill delta, missing token counts).
+
+Keep it to 3-5 short paragraphs. Do not use markdown headings.
+
+Benchmark JSON:
+%s
+`, data.SkillName, data.Iteration, payload)
+
+	agent := cfg.Judge.Agent
+	if agent == "" {
+		agent = cfg.Defaults.Agent
+	}
+	model := cfg.Judge.Model
+	if model == "" {
+		model = cfg.Defaults.Model
+	}
+
+	cmd := buildAgentCmd(agent, model, prompt, "")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }
 
 // renderReport executes the HTML template against the report data.
@@ -278,6 +339,22 @@ func buildSuggestions(data *ReportData) []string {
 			suggestions = append(suggestions, "Overall with-skill pass rate is very high — the skill is broadly effective.")
 		} else if avg < 0.5 {
 			suggestions = append(suggestions, "Overall with-skill pass rate is low — revisit the skill examples and core assertions before adding more evals.")
+		}
+	}
+
+	// If the baseline already ace's the evals, the evals may not be isolating the skill's value.
+	if modelCount > 0 {
+		var sumBaselinePass float64
+		var lowDeltaCount int
+		for _, mb := range data.Models {
+			sumBaselinePass += mb.Baseline.PassRate.Mean
+			if mb.Delta.PassRate <= 0.05 {
+				lowDeltaCount++
+			}
+		}
+		avgBaseline := sumBaselinePass / float64(modelCount)
+		if avgBaseline >= 0.95 && lowDeltaCount == modelCount {
+			suggestions = append(suggestions, "Baseline already passes nearly all evals — they may be too easy or not isolating the skill's value. Add harder cases that require the skill's guidance, or check that assertions actually verify skill-specific behavior rather than generic correctness.")
 		}
 	}
 

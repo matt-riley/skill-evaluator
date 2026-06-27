@@ -5,6 +5,19 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.2.0](https://github.com/matt-riley/skill-evaluator/compare/v1.1.0...v1.2.0) (2026-06-27)
+
+
+### Features
+
+* import-agit converts recorded sessions into evals.json corpora ([6670222](https://github.com/matt-riley/skill-evaluator/commit/66702227c07ed2473ab63127644bb9f8be31cc6c))
+
+
+### Bug Fixes
+
+* **benchmark:** correct best/worst ranking, populate run_summary, extract pi token counts ([83a9354](https://github.com/matt-riley/skill-evaluator/commit/83a935480c142c284544048352cb01775ea4c9bb))
+* **lint:** remove unused cliJSONEnvelopeKey const flagged by golangci-lint ([2fb9c82](https://github.com/matt-riley/skill-evaluator/commit/2fb9c82b1056005dfeeebfcc1be37fd27e07f265))
+
 ## [1.1.0](https://github.com/matt-riley/skill-evaluator/compare/v1.0.0...v1.1.0) (2026-06-27)
 
 

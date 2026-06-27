@@ -1,0 +1,293 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"html/template"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+// ReportData is the template payload for the HTML report.
+type ReportData struct {
+	SkillName         string
+	Iteration         int
+	GeneratedAt       time.Time
+	PreviousIteration int
+	IterationDelta    *Delta
+	Models            map[string]ModelBenchmark
+	BestModel         string
+	WorstModel        string
+	Suggestions       []string
+}
+
+const reportTemplate = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benchmark Report — {{.SkillName}} Iteration {{.Iteration}}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; color: #1f2328; line-height: 1.5; }
+    h1, h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #eef1f4; }
+    th { font-weight: 600; color: #57606a; }
+    .good { color: #1a7f37; }
+    .bad { color: #d1242f; }
+    .neutral { color: #57606a; }
+    .summary { background: #f6f8fa; padding: 1rem; border-radius: 6px; margin: 1rem 0; }
+    .suggestions { margin: 1rem 0; padding-left: 1.25rem; }
+    .suggestions li { margin: .5rem 0; }
+    small { color: #57606a; }
+  </style>
+</head>
+<body>
+  <h1>Benchmark Report — {{.SkillName}}</h1>
+  <p class="neutral">Iteration {{.Iteration}} · Generated {{.GeneratedAt.Format "2006-01-02 15:04:05"}}</p>
+
+  {{if .IterationDelta}}
+  <div class="summary">
+    <h2>Trend vs Iteration {{.PreviousIteration}}</h2>
+    <p>Pass-rate change: <strong class="{{passRateClass .IterationDelta.PassRate}}">{{printf "%+.1f%%" (percent .IterationDelta.PassRate)}}</strong></p>
+    <p>Time change: <strong class="{{costClass .IterationDelta.TimeSeconds}}">{{printf "%+.1fs" .IterationDelta.TimeSeconds}}</strong></p>
+    <p>Token change: <strong class="{{costClass .IterationDelta.Tokens}}">{{printf "%+.0f" .IterationDelta.Tokens}}</strong></p>
+  </div>
+  {{end}}
+
+  <h2>Per-Model Results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>With-skill pass rate</th>
+        <th>Baseline pass rate</th>
+        <th>Pass-rate delta</th>
+        <th>Time delta</th>
+        <th>Token delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $mk, $mb := .Models}}
+      <tr>
+        <td>
+          {{$mk}}
+          {{if eq $mk $.BestModel}}<span title="Best performer">🏆</span>{{end}}
+          {{if eq $mk $.WorstModel}}<span title="Worst performer">⚠️</span>{{end}}
+        </td>
+        <td>{{printf "%.1f%%" (percent $mb.WithSkill.PassRate.Mean)}}</td>
+        <td>{{printf "%.1f%%" (percent $mb.Baseline.PassRate.Mean)}}</td>
+        <td class="{{passRateClass $mb.Delta.PassRate}}">{{printf "%+.1f%%" (percent $mb.Delta.PassRate)}}</td>
+        <td class="{{costClass $mb.Delta.TimeSeconds}}">{{printf "%+.1fs" $mb.Delta.TimeSeconds}}</td>
+        <td class="{{costClass $mb.Delta.Tokens}}">{{printf "%+.0f" $mb.Delta.Tokens}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <h2>Suggested Next Steps</h2>
+  <ul class="suggestions">
+    {{range .Suggestions}}
+    <li>{{.}}</li>
+    {{else}}
+    <li>No specific suggestions — review the per-model table above.</li>
+    {{end}}
+  </ul>
+
+  <p><small>Raw data: <code>benchmark.json</code> in the same iteration directory.</small></p>
+</body>
+</html>`
+
+// cmdReport generates an HTML report from a benchmark.json file.
+func cmdReport(args []string) error {
+	fs := flag.NewFlagSet("report", flag.ContinueOnError)
+	iterFlag := fs.Int("iteration", 0, "Target iteration (default: latest)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	skillDir, err := detectSkillDir()
+	if err != nil {
+		return err
+	}
+
+	ef, err := readEvals(skillDir)
+	if err != nil {
+		return err
+	}
+
+	ws := workspacePath(skillDir)
+	iter := nextIteration(ws) - 1
+	if *iterFlag > 0 {
+		iter = *iterFlag
+	}
+	if iter < 1 {
+		return fmt.Errorf("no iterations found")
+	}
+
+	bf, err := loadBenchmarkFile(ws, iter)
+	if err != nil {
+		return fmt.Errorf("loading benchmark for iteration %d: %w", iter, err)
+	}
+
+	data := &ReportData{
+		SkillName:         ef.SkillName,
+		Iteration:         iter,
+		GeneratedAt:       bf.GeneratedAt,
+		PreviousIteration: bf.PreviousIteration,
+		IterationDelta:    bf.IterationDelta,
+		Models:            bf.Models,
+		BestModel:         bf.BestModel,
+		WorstModel:        bf.WorstModel,
+	}
+	data.Suggestions = buildSuggestions(data)
+
+	out, err := renderReport(data)
+	if err != nil {
+		return fmt.Errorf("rendering report: %w", err)
+	}
+
+	outPath := filepath.Join(iterationPath(ws, iter), "report.html")
+	if err := os.WriteFile(outPath, out, 0o644); err != nil {
+		return fmt.Errorf("writing report: %w", err)
+	}
+
+	fmt.Printf("Report written to %s\n", outPath)
+	return nil
+}
+
+// loadBenchmarkFile reads a benchmark.json file for a specific iteration.
+func loadBenchmarkFile(workspace string, iter int) (*BenchmarkFile, error) {
+	path := filepath.Join(iterationPath(workspace, iter), "benchmark.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var bf BenchmarkFile
+	if err := json.Unmarshal(data, &bf); err != nil {
+		return nil, err
+	}
+	return &bf, nil
+}
+
+// renderReport executes the HTML template against the report data.
+func renderReport(data *ReportData) ([]byte, error) {
+	tmpl, err := template.New("report").Funcs(template.FuncMap{
+		"percent":       percent,
+		"passRateClass": passRateClass,
+		"costClass":     costClass,
+	}).Parse(reportTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// percent converts a ratio to a percentage.
+func percent(v float64) float64 {
+	return v * 100
+}
+
+// passRateClass labels a delta where higher is better.
+func passRateClass(v float64) string {
+	if v > 0 {
+		return "good"
+	}
+	if v < 0 {
+		return "bad"
+	}
+	return "neutral"
+}
+
+// costClass labels a delta where lower is better (time, tokens).
+func costClass(v float64) string {
+	if v < 0 {
+		return "good"
+	}
+	if v > 0 {
+		return "bad"
+	}
+	return "neutral"
+}
+
+// buildSuggestions creates actionable next-step advice from the benchmark data.
+func buildSuggestions(data *ReportData) []string {
+	if len(data.Models) == 0 {
+		return []string{"No benchmark data was found. Check that runs finished and grading files exist."}
+	}
+
+	var suggestions []string
+
+	if data.IterationDelta != nil && data.PreviousIteration > 0 {
+		change := data.IterationDelta.PassRate
+		switch {
+		case change > 0:
+			suggestions = append(suggestions, fmt.Sprintf("Pass rates improved by %.1f%% versus iteration %d — keep the recent changes.", change*100, data.PreviousIteration))
+		case change < 0:
+			suggestions = append(suggestions, fmt.Sprintf("Pass rates regressed by %.1f%% versus iteration %d — review the latest skill or eval changes.", -change*100, data.PreviousIteration))
+		default:
+			suggestions = append(suggestions, fmt.Sprintf("Pass rates are unchanged versus iteration %d — try a more targeted change.", data.PreviousIteration))
+		}
+	}
+
+	if data.BestModel != "" && data.WorstModel != "" && data.BestModel != data.WorstModel {
+		suggestions = append(suggestions, fmt.Sprintf("Best performer was %s; worst was %s. Compare their outputs to find what helps.", data.BestModel, data.WorstModel))
+	}
+
+	var sumWithSkillPass float64
+	var modelCount int
+	allTokensZero := true
+
+	for mk, mb := range data.Models {
+		sumWithSkillPass += mb.WithSkill.PassRate.Mean
+		modelCount++
+
+		if mb.WithSkill.Tokens.Mean > 0 || mb.Baseline.Tokens.Mean > 0 {
+			allTokensZero = false
+		}
+
+		wsRate := mb.WithSkill.PassRate.Mean
+		switch {
+		case wsRate >= 0.95:
+			suggestions = append(suggestions, fmt.Sprintf("%s is near-perfect with the skill (%.1f%%) — consider expanding eval coverage.", mk, wsRate*100))
+		case wsRate < 0.5:
+			suggestions = append(suggestions, fmt.Sprintf("%s scores below 50%% even with the skill — focus debugging there first.", mk))
+		}
+
+		if mb.Delta.PassRate < 0 {
+			suggestions = append(suggestions, fmt.Sprintf("The skill currently hurts %s (%.1f%% drop) — try simplifying the prompt or tightening the assertions.", mk, -mb.Delta.PassRate*100))
+		}
+
+		baselineTime := mb.Baseline.TimeSeconds.Mean
+		if baselineTime > 0 && mb.Delta.TimeSeconds/baselineTime > 0.2 {
+			suggestions = append(suggestions, fmt.Sprintf("%s with-skill runs are >20%% slower than baseline — look for redundant instructions.", mk))
+		}
+	}
+
+	if modelCount > 0 {
+		avg := sumWithSkillPass / float64(modelCount)
+		if avg > 0.9 {
+			suggestions = append(suggestions, "Overall with-skill pass rate is very high — the skill is broadly effective.")
+		} else if avg < 0.5 {
+			suggestions = append(suggestions, "Overall with-skill pass rate is low — revisit the skill examples and core assertions before adding more evals.")
+		}
+	}
+
+	if allTokensZero {
+		suggestions = append(suggestions, "Token counts are all zero — the token-extraction heuristic probably missed this agent’s output format.")
+	}
+
+	if len(suggestions) == 0 {
+		suggestions = append(suggestions, "No strong trends detected. Review the per-model table to decide what to iterate on next.")
+	}
+
+	return suggestions
+}

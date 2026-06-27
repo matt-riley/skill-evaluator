@@ -39,6 +39,8 @@ func run() error {
 		return cmdBenchmark(args)
 	case "loop":
 		return cmdLoop(args)
+	case "report":
+		return cmdReport(args)
 	case "help", "-h", "--help":
 		printUsage()
 		return nil
@@ -56,6 +58,7 @@ Usage:
   skill-eval run              Run all evals (with-skill and baseline)
   skill-eval grade            Grade all runs in the current iteration
   skill-eval benchmark        Aggregate results into benchmark.json
+  skill-eval report           Generate an HTML report from benchmark.json
   skill-eval loop             Full cycle: run → grade → benchmark
 
 Flags:

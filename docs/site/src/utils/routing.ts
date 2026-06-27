@@ -15,6 +15,7 @@ const ORDERED_PAGES: NavMeta[] = [
   { path: "configuration" },
   { path: "workspace" },
   { path: "guides/first-eval" },
+  { path: "guides/writing-evals" },
   { path: "guides/reading-results" },
   { path: "guides/giving-feedback" },
   { path: "guides/auto-fixing" },

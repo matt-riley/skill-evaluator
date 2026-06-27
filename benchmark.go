@@ -25,22 +25,36 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 		Models:      map[string]ModelBenchmark{},
 	}
 
-	bestDelta := -999.0
-	worstDelta := 999.0
+	// Best/worst rank by absolute with-skill pass rate (matches the report's
+	// "Best performer" label) and only when there are >=2 models, so a
+	// single-model run doesn't label the same model as both best and worst.
+	bestRate := -1.0
+	worstRate := 2.0
+	rankModels := len(byModel) >= 2
 	for mk, rs := range byModel {
 		ws, bs := splitAndAggregate(rs)
 		mb := ModelBenchmark{WithSkill: ws, Baseline: bs, Delta: computeDelta(ws, bs)}
 		bf.Models[mk] = mb
 
-		if mb.Delta.PassRate > bestDelta {
-			bestDelta = mb.Delta.PassRate
-			bf.BestModel = mk
-		}
-		if mb.Delta.PassRate < worstDelta {
-			worstDelta = mb.Delta.PassRate
-			bf.WorstModel = mk
+		if rankModels {
+			rate := mb.WithSkill.PassRate.Mean
+			if rate > bestRate {
+				bestRate = rate
+				bf.BestModel = mk
+			}
+			if rate < worstRate {
+				worstRate = rate
+				bf.WorstModel = mk
+			}
 		}
 	}
+
+	// Populate the top-level run_summary as the cross-model aggregate so
+	// consumers reading run_summary see real numbers instead of zeros.
+	wsAgg, bsAgg := aggregateAcrossModels(bf.Models)
+	bf.RunSummary.WithSkill = wsAgg
+	bf.RunSummary.Baseline = bsAgg
+	bf.RunSummary.Delta = computeDelta(wsAgg, bsAgg)
 
 	prevIter, prev, err := loadPreviousBenchmark(workspace, iteration)
 	if err != nil {
@@ -135,6 +149,30 @@ func subtractDeltas(a, b Delta) *Delta {
 		TimeSeconds: a.TimeSeconds - b.TimeSeconds,
 		Tokens:      a.Tokens - b.Tokens,
 	}
+}
+
+// aggregateAcrossModels averages each model's WithSkill/Baseline means into a
+// single RunSummary, treating each model as one sample. Stddev here is the
+// cross-model spread of means, not a within-model statistic.
+func aggregateAcrossModels(models map[string]ModelBenchmark) (RunSummary, RunSummary) {
+	var wsPR, wsT, wsTok, bsPR, bsT, bsTok []float64
+	for _, mb := range models {
+		wsPR = append(wsPR, mb.WithSkill.PassRate.Mean)
+		wsT = append(wsT, mb.WithSkill.TimeSeconds.Mean)
+		wsTok = append(wsTok, mb.WithSkill.Tokens.Mean)
+		bsPR = append(bsPR, mb.Baseline.PassRate.Mean)
+		bsT = append(bsT, mb.Baseline.TimeSeconds.Mean)
+		bsTok = append(bsTok, mb.Baseline.Tokens.Mean)
+	}
+	return RunSummary{
+			PassRate:    Stats{Mean: mean(wsPR), Stddev: stddev(wsPR)},
+			TimeSeconds: Stats{Mean: mean(wsT), Stddev: stddev(wsT)},
+			Tokens:      Stats{Mean: mean(wsTok), Stddev: stddev(wsTok)},
+		}, RunSummary{
+			PassRate:    Stats{Mean: mean(bsPR), Stddev: stddev(bsPR)},
+			TimeSeconds: Stats{Mean: mean(bsT), Stddev: stddev(bsT)},
+			Tokens:      Stats{Mean: mean(bsTok), Stddev: stddev(bsTok)},
+		}
 }
 
 // splitAndAggregate splits results into with_skill and baseline, then aggregates each.

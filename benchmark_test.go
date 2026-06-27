@@ -193,6 +193,71 @@ func TestIterationDeltaNoPrevious(t *testing.T) {
 	}
 }
 
+func TestBestWorstModelRanking(t *testing.T) {
+	// Two models: A passes more with the skill (best), B passes less (worst),
+	// even though B has the bigger delta — ranking is by absolute pass rate.
+	results := []*RunResult{
+		{Model: "A", Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.9}}},
+		{Model: "A", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.85}}},
+		{Model: "B", Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.4}}},
+		{Model: "B", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.1}}},
+	}
+	dir := t.TempDir()
+	if err := computeBenchmark(results, dir, 1); err != nil {
+		t.Fatalf("computeBenchmark: %v", err)
+	}
+	bf := mustReadBenchmark(t, dir, 1)
+	if bf.BestModel != "A" {
+		t.Errorf("BestModel = %q, want A", bf.BestModel)
+	}
+	if bf.WorstModel != "B" {
+		t.Errorf("WorstModel = %q, want B", bf.WorstModel)
+	}
+}
+
+func TestBestWorstModelSingleModelUnset(t *testing.T) {
+	// A single model must not be labeled as both best and worst.
+	results := []*RunResult{
+		{Model: "", Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.9}}},
+		{Model: "", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}},
+	}
+	dir := t.TempDir()
+	if err := computeBenchmark(results, dir, 1); err != nil {
+		t.Fatalf("computeBenchmark: %v", err)
+	}
+	bf := mustReadBenchmark(t, dir, 1)
+	if bf.BestModel != "" || bf.WorstModel != "" {
+		t.Errorf("single model: Best=%q Worst=%q, want both empty", bf.BestModel, bf.WorstModel)
+	}
+}
+
+func TestRunSummaryAggregate(t *testing.T) {
+	// Top-level run_summary must be the cross-model average, not zeros.
+	results := []*RunResult{
+		{Model: "A", Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.8}}, Timing: &TimingData{DurationMs: 1000, TotalTokens: 100}},
+		{Model: "A", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}, Timing: &TimingData{DurationMs: 800, TotalTokens: 80}},
+		{Model: "B", Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}, Timing: &TimingData{DurationMs: 2000, TotalTokens: 300}},
+		{Model: "B", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.4}}, Timing: &TimingData{DurationMs: 1800, TotalTokens: 250}},
+	}
+	dir := t.TempDir()
+	if err := computeBenchmark(results, dir, 1); err != nil {
+		t.Fatalf("computeBenchmark: %v", err)
+	}
+	bf := mustReadBenchmark(t, dir, 1)
+	// Average with-skill pass rate across A(0.8) and B(0.6) = 0.7
+	if math.Abs(bf.RunSummary.WithSkill.PassRate.Mean-0.7) > 1e-9 {
+		t.Errorf("run_summary.with_skill.pass_rate.mean = %v, want 0.7", bf.RunSummary.WithSkill.PassRate.Mean)
+	}
+	// Average baseline = (0.6+0.4)/2 = 0.5
+	if math.Abs(bf.RunSummary.Baseline.PassRate.Mean-0.5) > 1e-9 {
+		t.Errorf("run_summary.baseline.pass_rate.mean = %v, want 0.5", bf.RunSummary.Baseline.PassRate.Mean)
+	}
+	// Delta = 0.7 - 0.5 = 0.2
+	if math.Abs(bf.RunSummary.Delta.PassRate-0.2) > 1e-9 {
+		t.Errorf("run_summary.delta.pass_rate = %v, want 0.2", bf.RunSummary.Delta.PassRate)
+	}
+}
+
 func mustWriteBenchmark(t *testing.T, dir string, iter int, bf *BenchmarkFile) {
 	t.Helper()
 	path := iterationPath(dir, iter)

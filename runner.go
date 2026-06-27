@@ -52,7 +52,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 		DurationMs: int(elapsed.Milliseconds()),
 	}
 	logger.Info("eval completed", "eval", eval.ID, "config", configLabel, "status", result.Status, "duration_ms", result.Timing.DurationMs)
-	result.Timing.TotalTokens = extractTokens(string(output))
+	result.Timing.TotalTokens = tokensFromOutput(agent, string(output))
 
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")
 	timingJSON, _ := json.MarshalIndent(result.Timing, "", "  ")
@@ -76,9 +76,10 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 var buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
 	switch agent {
 	case "pi":
-		// pi docs: -p (print), --no-session (ephemeral), --no-context-files (clean context)
-		// --skill <path> loads the skill into the system prompt properly
-		args := []string{"-p", "--no-session", "--no-context-files"}
+		// pi docs: --mode json emits an event stream with usage.totalTokens;
+		// -p/--no-session keep it ephemeral, --no-context-files keeps context clean,
+		// --skill <path> loads the skill into the system prompt properly.
+		args := []string{"-p", "--no-session", "--no-context-files", "--mode", "json"}
 		if model != "" {
 			args = append(args, "--model", model)
 		}
@@ -112,6 +113,45 @@ var buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
 		args := []string{task}
 		return exec.Command(agent, args...)
 	}
+}
+
+// tokensFromOutput picks the right token extractor for the agent runtime.
+// pi emits a JSON event stream (parsed precisely); others fall back to the
+// regex heuristic.
+func tokensFromOutput(agent, output string) int {
+	if agent == "pi" {
+		return extractPiTokens(output)
+	}
+	return extractTokens(output)
+}
+
+// extractPiTokens sums usage.totalTokens across assistant messages in a pi
+// --mode json event stream. Each assistant message_end fires once and carries
+// the final usage for that turn, so summing them gives the run total.
+func extractPiTokens(output string) int {
+	var total int
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || line[0] != '{' {
+			continue
+		}
+		var ev struct {
+			Type    string `json:"type"`
+			Message struct {
+				Role  string `json:"role"`
+				Usage *struct {
+					TotalTokens int `json:"totalTokens"`
+				} `json:"usage"`
+			} `json:"message"`
+		}
+		if json.Unmarshal([]byte(line), &ev) != nil {
+			continue
+		}
+		if ev.Type == "message_end" && ev.Message.Role == "assistant" && ev.Message.Usage != nil {
+			total += ev.Message.Usage.TotalTokens
+		}
+	}
+	return total
 }
 
 // extractTokens tries to find token counts in agent output.
@@ -241,7 +281,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 
 		// Save timing
 		td := &TimingData{DurationMs: int(elapsed.Milliseconds())}
-		td.TotalTokens = extractTokens(string(output))
+		td.TotalTokens = tokensFromOutput(agent, string(output))
 		tdJSON, _ := json.MarshalIndent(td, "", "  ")
 		_ = os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644)
 

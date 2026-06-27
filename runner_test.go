@@ -2,6 +2,31 @@ package main
 
 import "testing"
 
+func TestRunnerExtractPiTokens(t *testing.T) {
+	// Two assistant turns: 12744 + 500 = 13244. message_end fires once per
+	// assistant message; usage also repeats in message_update/turn_end/agent_end
+	// and must NOT be double-counted.
+	stream := `{"type":"session","version":3}` + "\n" +
+		`{"type":"agent_start"}` + "\n" +
+		`{"type":"message_end","message":{"role":"user"}}` + "\n" +
+		`{"type":"message_update","message":{"role":"assistant","usage":{"totalTokens":12744}}}` + "\n" +
+		`{"type":"message_end","message":{"role":"assistant","usage":{"totalTokens":12744}}}` + "\n" +
+		`{"type":"turn_end","message":{"role":"assistant","usage":{"totalTokens":12744}}}` + "\n" +
+		`{"type":"message_end","message":{"role":"assistant","usage":{"totalTokens":500}}}` + "\n" +
+		`{"type":"agent_end","messages":[{"role":"assistant","usage":{"totalTokens":12744}}]}` + "\n"
+	if got := extractPiTokens(stream); got != 13244 {
+		t.Errorf("extractPiTokens = %d, want 13244", got)
+	}
+	// Non-pi agent falls back to the regex heuristic.
+	if got := tokensFromOutput("claude", "total tokens: 42"); got != 42 {
+		t.Errorf("tokensFromOutput(claude, ...) = %d, want 42", got)
+	}
+	// pi with no usage data returns 0.
+	if got := extractPiTokens("not json at all"); got != 0 {
+		t.Errorf("extractPiTokens(no data) = %d, want 0", got)
+	}
+}
+
 func TestRunnerExtractTokens(t *testing.T) {
 	tests := []struct {
 		name   string

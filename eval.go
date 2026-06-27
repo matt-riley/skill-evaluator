@@ -143,7 +143,7 @@ type BenchmarkFile struct {
 		WithSkill RunSummary `json:"with_skill"`
 		Baseline  RunSummary `json:"baseline"`
 		Delta     Delta      `json:"delta"`
-	} `json:"run_summary,omitempty"`
+	} `json:"run_summary"`
 	Models      map[string]ModelBenchmark `json:"models,omitempty"`
 	BestModel   string                    `json:"best_model,omitempty"`
 	WorstModel  string                    `json:"worst_model,omitempty"`

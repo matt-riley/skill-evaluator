@@ -39,6 +39,8 @@ func run() error {
 		return cmdBenchmark(args)
 	case "loop":
 		return cmdLoop(args)
+	case "import-agit":
+		return cmdImportAgit(args)
 	case "report":
 		return cmdReport(args)
 	case "help", "-h", "--help":
@@ -62,6 +64,7 @@ Usage:
                       [--llm-suggestions]
                                       Generate an HTML report from benchmark.json
   skill-eval loop                     Full cycle: run → grade → benchmark
+  skill-eval import-agit              Convert recorded agit sessions into evals/evals.json
 
 Flags:
   --verbose, -v               Enable structured debug logging to stderr

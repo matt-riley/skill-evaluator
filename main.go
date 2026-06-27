@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -516,10 +515,33 @@ func cmdGrade(args []string) error {
 // --- benchmark ---
 
 func cmdBenchmark(args []string) error {
+	fs := flag.NewFlagSet("benchmark", flag.ContinueOnError)
+	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	cliModels, err := parseModels(*modelsRaw)
+	if err != nil {
+		return err
+	}
+
 	skillDir, err := detectSkillDir()
 	if err != nil {
 		return err
 	}
+
+	cfg, err := LoadConfig(skillDir)
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
+	ef, err := readEvals(skillDir)
+	if err != nil {
+		return err
+	}
+
+	models := resolveModels(cfg, cliModels)
 
 	ws := workspacePath(skillDir)
 	iter := nextIteration(ws) - 1
@@ -527,67 +549,21 @@ func cmdBenchmark(args []string) error {
 		return fmt.Errorf("no iterations found")
 	}
 
-	// Collect grading results from all evals, auto-detecting model vs single-model layout
 	var results []*RunResult
-	entries, err := os.ReadDir(iterationPath(ws, iter))
-	if err != nil {
-		return fmt.Errorf("reading iteration: %w", err)
-	}
-
-	for _, e := range entries {
-		if !e.IsDir() || !strings.HasPrefix(e.Name(), "eval-") {
-			continue
-		}
-		evalID, _ := strconv.Atoi(strings.TrimPrefix(e.Name(), "eval-"))
-		evalPath := filepath.Join(iterationPath(ws, iter), e.Name())
-
-		// Check if this eval has model subdirectories or legacy flat layout
-		modelDirs, _ := os.ReadDir(evalPath)
-		hasModels := false
-		for _, m := range modelDirs {
-			if m.IsDir() && m.Name() != "with_skill" && m.Name() != "baseline" {
-				hasModels = true
-				break
-			}
-		}
-
-		if hasModels {
-			// Multi-model layout: eval-N/{modelKey}/{config}/
-			for _, m := range modelDirs {
-				if !m.IsDir() {
-					continue
-				}
-				modelKey := m.Name()
-				for _, config := range []string{"with_skill", "baseline"} {
-					gradingPath := filepath.Join(evalPath, modelKey, config, "grading.json")
-					data, err := os.ReadFile(gradingPath)
-					if err != nil {
-						continue
-					}
-					var gf GradingFile
-					if err := json.Unmarshal(data, &gf); err != nil {
-						continue
-					}
-					results = append(results, &RunResult{
-						EvalID:  evalID,
-						Model:   modelKey,
-						Config:  config,
-						Grading: &gf,
-					})
-
-					timingPath := filepath.Join(evalPath, modelKey, config, "timing.json")
-					if td, err := os.ReadFile(timingPath); err == nil {
-						var t TimingData
-						if json.Unmarshal(td, &t) == nil {
-							results[len(results)-1].Timing = &t
-						}
-					}
-				}
-			}
-		} else {
-			// Legacy single-model layout: eval-N/{config}/
+	for _, eval := range ef.Evals {
+		for _, m := range models {
+			mk := m.Key()
 			for _, config := range []string{"with_skill", "baseline"} {
-				gradingPath := filepath.Join(evalPath, config, "grading.json")
+				gradingPath := filepath.Join(evalPath(ws, iter, eval.ID, mk), config, "grading.json")
+
+				if _, err := os.Stat(gradingPath); os.IsNotExist(err) {
+					if mk == m.Agent && len(models) == 1 {
+						gradingPath = filepath.Join(evalPath(ws, iter, eval.ID, ""), config, "grading.json")
+					} else {
+						continue
+					}
+				}
+
 				data, err := os.ReadFile(gradingPath)
 				if err != nil {
 					continue
@@ -596,19 +572,23 @@ func cmdBenchmark(args []string) error {
 				if err := json.Unmarshal(data, &gf); err != nil {
 					continue
 				}
-				results = append(results, &RunResult{
-					EvalID:  evalID,
+
+				rr := &RunResult{
+					EvalID:  eval.ID,
+					Model:   mk,
 					Config:  config,
 					Grading: &gf,
-				})
+				}
 
-				timingPath := filepath.Join(evalPath, config, "timing.json")
+				timingPath := filepath.Join(filepath.Dir(gradingPath), "timing.json")
 				if td, err := os.ReadFile(timingPath); err == nil {
 					var t TimingData
 					if json.Unmarshal(td, &t) == nil {
-						results[len(results)-1].Timing = &t
+						rr.Timing = &t
 					}
 				}
+
+				results = append(results, rr)
 			}
 		}
 	}
@@ -654,6 +634,11 @@ func cmdLoop(args []string) error {
 		return fmt.Errorf("grade phase: %w", err)
 	}
 
+	benchArgs := []string{}
+	if *modelsRaw != "" {
+		benchArgs = append(benchArgs, "--models", *modelsRaw)
+	}
+
 	if *fixFlag {
 		fmt.Println("\n[3/4] Auto-fixing failed evals...")
 		if err := runFixPhase(*modelsRaw, *maxFixAttempts); err != nil {
@@ -661,7 +646,7 @@ func cmdLoop(args []string) error {
 		}
 	} else {
 		fmt.Println("\n[3/3] Benchmarking...")
-		if err := cmdBenchmark(nil); err != nil {
+		if err := cmdBenchmark(benchArgs); err != nil {
 			return fmt.Errorf("benchmark phase: %w", err)
 		}
 		fmt.Println("\nLoop complete.")
@@ -669,7 +654,7 @@ func cmdLoop(args []string) error {
 	}
 
 	fmt.Println("\n[4/4] Benchmarking...")
-	if err := cmdBenchmark(nil); err != nil {
+	if err := cmdBenchmark(benchArgs); err != nil {
 		return fmt.Errorf("benchmark phase: %w", err)
 	}
 

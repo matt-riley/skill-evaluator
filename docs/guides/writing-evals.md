@@ -139,7 +139,17 @@ We know this sounds backwards, but it's the absolute fastest way to know they're
 
 1. Write your evals and assertions.
 2. Run the **baseline** (no skill) and watch them fail beautifully.
+   ```bash
+   # The run command will execute your evals
+   skill-eval run --baseline previous
+   # The grade command evaluates the outputs against your assertions
+   skill-eval grade
+   ```
 3. Run the **with-skill** version and watch more of them turn green!
+   ```bash
+   # Alternatively, use loop to run, grade, and benchmark all at once!
+   skill-eval loop
+   ```
 
 If your baseline already passes, tighten up those assertions until it doesn't. If you just can't get it to fail, the task might not be a great target for your skill.
 
@@ -168,7 +178,7 @@ A healthy eval suite actually gets harder over time. That's how you know your sk
 
 ## Quick Checklist
 
-Before you run the magic `skill-eval loop` command, ask yourself:
+Before you run the full `skill-eval loop` command, ask yourself:
 
 - [ ] Can I explain exactly what gap this eval is measuring?
 - [ ] Will the baseline run plausibly fail at least one assertion?

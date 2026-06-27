@@ -66,6 +66,7 @@ Usage:
 Flags:
   --verbose, -v               Enable structured debug logging to stderr
   --baseline <path|previous>  Baseline for runs (default: none)
+  --baseline-only             Run only the baseline config
   --eval <id>                 Run/Grade a single eval by ID
   --global                    For init: create global config
   --fix                       (loop) Auto-refine failing evals up to --max-fix-attempts
@@ -217,6 +218,7 @@ judge:
 func cmdRun(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	baselineFlag := fs.String("baseline", "none", "Baseline for runs")
+	baselineOnly := fs.Bool("baseline-only", false, "Run only the baseline config")
 	evalID := fs.Int("eval", -1, "Run a single eval by ID")
 	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs (e.g. pi:claude-sonnet,claude)")
 	resume := fs.Bool("resume", false, "Resume the latest running iteration")
@@ -300,9 +302,13 @@ func cmdRun(args []string) error {
 		}
 		evalCount++
 	}
-	totalRuns := evalCount * len(models) * 2 // 2 configs per model
+	configsToRun := []string{"with_skill", "baseline"}
+	if *baselineOnly {
+		configsToRun = []string{"baseline"}
+	}
+	totalRuns := evalCount * len(models) * len(configsToRun)
 	if totalRuns > 10 && multiModel {
-		fmt.Printf("⚠️  This will run %d agent invocations (%d evals × %d models × 2 configs).\n", totalRuns, evalCount, len(models))
+		fmt.Printf("⚠️  This will run %d agent invocations (%d evals × %d models × %d configs).\n", totalRuns, evalCount, len(models), len(configsToRun))
 		fmt.Print("Continue? [y/N]: ")
 		var answer string
 		_, _ = fmt.Scanln(&answer)
@@ -338,7 +344,7 @@ func cmdRun(args []string) error {
 
 		var jobs []runJob
 		for _, m := range models {
-			for _, config := range []string{"with_skill", "baseline"} {
+			for _, config := range configsToRun {
 				if *resume && isCompleted(lock, eval.ID, m.Key(), config) {
 					continue
 				}
@@ -606,6 +612,7 @@ func cmdBenchmark(args []string) error {
 func cmdLoop(args []string) error {
 	fs := flag.NewFlagSet("loop", flag.ContinueOnError)
 	baselinePath := fs.String("baseline", "none", "Baseline for runs")
+	baselineOnly := fs.Bool("baseline-only", false, "Run only the baseline config")
 	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs")
 	fixFlag := fs.Bool("fix", false, "Auto-refine failing evals")
 	maxFixAttempts := fs.Int("max-fix-attempts", 3, "Max fix attempts per eval")
@@ -617,6 +624,9 @@ func cmdLoop(args []string) error {
 	fmt.Println("=== skill-eval loop ===")
 
 	runArgs := []string{"--baseline", *baselinePath}
+	if *baselineOnly {
+		runArgs = append(runArgs, "--baseline-only")
+	}
 	if *modelsRaw != "" {
 		runArgs = append(runArgs, "--models", *modelsRaw)
 	}

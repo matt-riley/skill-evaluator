@@ -36,6 +36,18 @@ models:
   - agent: copilot
 ```
 
+### The `--baseline-only` flag 🎯
+
+Sometimes you just want to see how the baseline model performs without waiting for the `with-skill` run. If you're tightening up your evals and want to verify that the baseline actually fails them (a key step in our [writing evals guide](guides/writing-evals.md)!), use `--baseline-only`:
+
+```bash
+skill-eval run --baseline-only --eval 1
+skill-eval loop --baseline-only
+```
+
+This skips the `with_skill` execution entirely, saving you time and API tokens while you iterate on your fixtures and assertions. 
+
+
 ### The `--fix` flag 🪄
 
 Tack `--fix` onto `loop` and skill-eval will automatically re-run any failing with-skill eval — feeding the judge's feedback back to the agent as a critique. It'll keep refining until every assertion passes, the score stops improving, or it hits the attempt limit.

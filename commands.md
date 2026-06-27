@@ -11,6 +11,7 @@ description: Learn the skill-evaluator CLI commands including init, run, grade, 
 | `run` | Executes all evals. Use `--eval <id>` for just one, `--baseline previous` to snapshot, or `--resume` to pick up where you left off. |
 | `grade` | Asks the LLM to grade your assertions. Add `--benchmark` to auto-aggregate the stats. |
 | `benchmark` | Wraps up all your grading results into a neat `benchmark.json`. |
+| `report` | Generates a beautiful HTML report of your benchmark results! Add `--llm-suggestions` for AI coach notes. 📊 |
 | `loop` | Does it all: run → grade → benchmark! Add `--fix` to auto-refine, `--models` to compare agents. |
 
 ### The `--model` flag 🔬
@@ -69,6 +70,17 @@ skill-eval loop --resume
 ```
 
 If the latest iteration is already complete, `--resume` tells you there's nothing to pick up. And `skill-eval grade` will refuse to grade an incomplete iteration — finish it with `--resume` first!
+
+### Share it with a Beautiful HTML Report 📊
+
+Want to share your amazing progress or just review it in style? Run the `report` command:
+
+```bash
+skill-eval report
+skill-eval report --llm-suggestions
+```
+
+This magic command generates a gorgeous `report.html` right in your iteration directory. It shows per-model stats, pass-rate trends, and actionable suggestions. Toss in `--llm-suggestions` and your judge agent will drop in some personalized coaching notes on what to test next! ✨
 
 ### Debug with `--verbose` 🐛
 

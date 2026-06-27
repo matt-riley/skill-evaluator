@@ -9,6 +9,6 @@ Welcome to **skill-eval**! This friendly little CLI tool helps you automate the 
 
 ![Skill Evaluator in action!](./assets/cli-demo.gif)
 
-With `skill-eval`, you can easily define test cases, run your agent with and without a skill, have an LLM grade the results, and see how everything benchmarks. Let's make your skills amazing! 🚀
+With `skill-eval`, you can easily define test cases, run your agent with and without a skill, have an LLM grade the results, and generate beautiful HTML reports of your benchmarks. Let's make your skills amazing! 🚀
 
 

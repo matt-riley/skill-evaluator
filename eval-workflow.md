@@ -93,6 +93,7 @@ Take a peek inside your workspace. For each eval, you'll find:
 | `outputs/` | The actual files generated—open them up and take a look! |
 | `grading.json` | Which assertions passed or failed, along with the judge's reasoning. |
 | `benchmark.json` | All your stats and deltas in one place. |
+| `report.html` | A gorgeous, shareable summary of your run! (Run `skill-eval report` to generate it). 📊 |
 
 **Don't forget to add your feedback!** You can leave notes in `feedback.json`:
 

@@ -99,7 +99,9 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 		gf.Summary.PassRate = float64(gf.Summary.Passed) / float64(gf.Summary.Total)
 	}
 
-	saveGrading(gradingPath, gf)
+	if err := saveGrading(gradingPath, gf); err != nil {
+		return nil, fmt.Errorf("saving grading for %s: %w", contextLabel, err)
+	}
 	return gf, nil
 }
 
@@ -265,9 +267,12 @@ func parseGradingOutput(output string, assertions []string) (*GradingFile, error
 }
 
 // saveGrading writes a GradingFile to disk.
-func saveGrading(path string, gf *GradingFile) {
-	data, _ := json.MarshalIndent(gf, "", "  ")
-	_ = os.WriteFile(path, data, 0o644)
+func saveGrading(path string, gf *GradingFile) error {
+	data, err := json.MarshalIndent(gf, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling grading: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
 }
 
 // truncate shortens a string for error messages.

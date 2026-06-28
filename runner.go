@@ -55,8 +55,11 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	result.Timing.TotalTokens = tokensFromOutput(agent, string(output))
 
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")
-	timingJSON, _ := json.MarshalIndent(result.Timing, "", "  ")
-	_ = os.WriteFile(timingPath, timingJSON, 0o644)
+	if timingJSON, err := json.MarshalIndent(result.Timing, "", "  "); err != nil {
+		logger.Warn("failed to marshal timing", "error", err)
+	} else if err := os.WriteFile(timingPath, timingJSON, 0o644); err != nil {
+		logger.Warn("failed to write timing", "path", timingPath, "error", err)
+	}
 
 	return result, nil
 }
@@ -74,45 +77,7 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
 // ponytail: var (not func) so tests can swap it without a separate seam.
 var buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
-	switch agent {
-	case "pi":
-		// pi docs: --mode json emits an event stream with usage.totalTokens;
-		// -p/--no-session keep it ephemeral, --no-context-files keeps context clean,
-		// --skill <path> loads the skill into the system prompt properly.
-		args := []string{"-p", "--no-session", "--no-context-files", "--mode", "json"}
-		if model != "" {
-			args = append(args, "--model", model)
-		}
-		if skillPath != "" {
-			args = append(args, "--skill", skillPath)
-		}
-		args = append(args, task)
-		return exec.Command("pi", args...)
-
-	case "claude":
-		// claude --help: -p (print), --no-session-persistence, --model
-		// No --skill flag — skill path is embedded in the prompt text
-		args := []string{"-p", "--no-session-persistence"}
-		if model != "" {
-			args = append(args, "--model", model)
-		}
-		args = append(args, task)
-		return exec.Command("claude", args...)
-
-	case "codex":
-		// codex exec --help: exec subcommand, -m (model), --ephemeral
-		// No --skill flag — skill path is embedded in the prompt text
-		args := []string{"exec", "--ephemeral"}
-		if model != "" {
-			args = append(args, "-m", model)
-		}
-		args = append(args, task)
-		return exec.Command("codex", args...)
-
-	default:
-		args := []string{task}
-		return exec.Command(agent, args...)
-	}
+	return newAgentRunner(agent).Build(model, task, skillPath)
 }
 
 // tokensFromOutput picks the right token extractor for the agent runtime.
@@ -282,8 +247,11 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		// Save timing
 		td := &TimingData{DurationMs: int(elapsed.Milliseconds())}
 		td.TotalTokens = tokensFromOutput(agent, string(output))
-		tdJSON, _ := json.MarshalIndent(td, "", "  ")
-		_ = os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644)
+		if tdJSON, err := json.MarshalIndent(td, "", "  "); err != nil {
+			logger.Warn("failed to marshal fix timing", "error", err)
+		} else if err := os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644); err != nil {
+			logger.Warn("failed to write fix timing", "path", filepath.Join(fixDir, "timing.json"), "error", err)
+		}
 
 		// Grade this fix attempt
 		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, modelKey, attempt)
@@ -321,12 +289,18 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 
 	// Overwrite grading.json with the best attempt's result
 	best := fr.Attempts[fr.BestFix]
-	saveGrading(gradingPath, best.Grading)
+	if err := saveGrading(gradingPath, best.Grading); err != nil {
+		logger.Warn("failed to save best-fix grading", "path", gradingPath, "error", err)
+	}
 
 	// Save fix trajectory
 	fixPath := filepath.Join(evalDir, "with_skill", "fix-results.json")
-	fixJSON, _ := json.MarshalIndent(fr, "", "  ")
-	_ = os.WriteFile(fixPath, fixJSON, 0o644)
+	fixJSON, err := json.MarshalIndent(fr, "", "  ")
+	if err != nil {
+		logger.Warn("failed to marshal fix results", "error", err)
+	} else if err := os.WriteFile(fixPath, fixJSON, 0o644); err != nil {
+		logger.Warn("failed to write fix results", "path", fixPath, "error", err)
+	}
 
 	return fr, nil
 }

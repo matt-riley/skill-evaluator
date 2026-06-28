@@ -165,7 +165,10 @@ func cmdInit(args []string) error {
 				},
 			},
 		}
-		data, _ := json.MarshalIndent(skeleton, "", "  ")
+		data, err := json.MarshalIndent(skeleton, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshaling skeleton evals.json: %w", err)
+		}
 		if err := os.WriteFile(evalsPath, data, 0o644); err != nil {
 			return err
 		}

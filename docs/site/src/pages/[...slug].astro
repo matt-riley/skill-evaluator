@@ -1,0 +1,153 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NavTree from '../components/NavTree.astro';
+import { buildNavLinks, cleanPath, EXCLUDED_DOCS, extractDescription } from '../utils/routing';
+
+export async function getStaticPaths() {
+  const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
+  const adrDocs = import.meta.glob('../../../../docs/adr/*.md', { eager: true });
+  const guideDocs = import.meta.glob('../../../../docs/guides/*.md', { eager: true });
+
+  const allFiles: Record<string, any> = Object.fromEntries(
+    Object.entries({ ...rootDocs, ...adrDocs, ...guideDocs }).filter(([key]) =>
+      !EXCLUDED_DOCS.some((doc) => key.toLowerCase().endsWith(doc))
+    )
+  );
+
+  const allKeys = Object.keys(allFiles);
+  const navLinks = buildNavLinks(allKeys);
+
+  return Object.entries(allFiles).map(([key, doc]) => {
+    const relativePath = cleanPath(key).toLowerCase();
+    const slug = relativePath === 'readme' ? undefined : relativePath;
+
+    return {
+      params: { slug },
+      props: { doc, navLinks }
+    };
+  });
+}
+
+const { doc, navLinks } = Astro.props;
+const Content = doc.default;
+
+const currentSlug = (Astro.params.slug || 'README').toLowerCase();
+
+const isAnyAdrActive = currentSlug.startsWith('adr/');
+const isAnyGuideActive = currentSlug.startsWith('guides/');
+const docLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog' && link.path !== 'readme');
+const guideLinks = navLinks.filter(link => link.isGuide);
+const adrLinks = navLinks.filter(link => link.isAdr);
+const changelogLink = navLinks.find(link => link.path === 'changelog');
+
+const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' : currentSlug);
+const description = doc.frontmatter?.description || extractDescription(doc.rawContent());
+---
+<Layout title={pageTitle} description={description}>
+  <div class="flex min-h-screen text-black font-sans selection:bg-neo-pink selection:text-white">
+    <!-- Sidebar -->
+    <aside class="w-80 bg-neo-yellow border-r-4 border-black p-6 hidden md:flex flex-col shrink-0 overflow-y-auto h-screen sticky top-0 z-20 [scrollbar-gutter:stable]">
+      <div class="mb-10 flex items-center gap-4 group cursor-pointer">
+        <div class="size-14 rounded-3xl bg-neo-pink border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:-translate-y-1 group-hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+          <span class="text-white font-black text-2xl -rotate-6 group-hover:rotate-6 transition-transform">SE</span>
+        </div>
+        <a href="/" class="text-3xl font-black text-black tracking-tight group-hover:scale-105 transition-transform origin-left">Skill Eval</a>
+      </div>
+      
+      <div class="space-y-8 flex-1">
+        <NavTree
+          currentSlug={currentSlug}
+          docLinks={docLinks}
+          guideLinks={guideLinks}
+          adrLinks={adrLinks}
+          changelogLink={changelogLink}
+          isAnyGuideActive={isAnyGuideActive}
+          isAnyAdrActive={isAnyAdrActive}
+        />
+      </div>
+    </aside>
+
+    <!-- Mobile header -->
+    <div class="md:hidden fixed top-0 left-0 right-0 h-20 border-b-4 border-black bg-neo-yellow z-30 flex items-center px-6">
+      <div class="size-12 rounded-2xl bg-neo-pink border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mr-4">
+        <span class="text-white font-black text-lg -rotate-6">SE</span>
+      </div>
+      <a href="/" class="text-3xl font-black text-black tracking-tight">Skill Eval</a>
+      <button id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu" class="ml-auto p-2 bg-white border-4 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
+        <span class="text-2xl font-black">☰</span>
+      </button>
+    </div>
+
+    <!-- Mobile menu overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 md:hidden" aria-hidden="true">
+      <div class="absolute inset-0 bg-black/50" id="mobile-menu-backdrop"></div>
+      <div id="mobile-menu-drawer" class="absolute left-0 top-0 bottom-0 w-80 bg-neo-yellow border-r-4 border-black p-6 overflow-y-auto transform -translate-x-full transition-transform duration-300">
+        <div class="flex justify-between items-center mb-8">
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-2xl bg-neo-pink border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span class="text-white font-black text-sm -rotate-6">SE</span>
+            </div>
+            <span class="text-xl font-black text-black">Skill Eval</span>
+          </div>
+          <button id="menu-close" aria-label="Close menu" class="p-2 bg-white border-4 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
+            <span class="text-xl font-black">✕</span>
+          </button>
+        </div>
+        
+        <div class="space-y-8">
+          <NavTree
+            currentSlug={currentSlug}
+            docLinks={docLinks}
+            guideLinks={guideLinks}
+            adrLinks={adrLinks}
+            changelogLink={changelogLink}
+            isAnyGuideActive={isAnyGuideActive}
+            isAnyAdrActive={isAnyAdrActive}
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 w-full max-w-4xl mx-auto px-6 py-28 md:py-20 md:px-16 relative overflow-x-hidden min-h-screen">
+      
+      <div class="bg-white border-4 border-black rounded-[3rem] p-8 md:p-16 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] relative z-10 mb-20" transition:name="card">
+        <article class="docs-prose">
+          <Content />
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const toggle = document.getElementById('menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+    const close = document.getElementById('menu-close');
+    const drawer = document.getElementById('mobile-menu-drawer');
+
+    toggle?.addEventListener('click', () => {
+      if (!menu || !drawer) return;
+      menu.classList.remove('hidden');
+      menu.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      requestAnimationFrame(() => {
+        drawer.classList.remove('-translate-x-full');
+        drawer.classList.add('translate-x-0');
+      });
+    });
+
+    function closeMenu() {
+      if (!menu || !drawer) return;
+      drawer.classList.remove('translate-x-0');
+      drawer.classList.add('-translate-x-full');
+      toggle.setAttribute('aria-expanded', 'false');
+      setTimeout(() => {
+        menu.classList.add('hidden');
+        menu.setAttribute('aria-hidden', 'true');
+      }, 300);
+    }
+
+    close?.addEventListener('click', closeMenu);
+    document.getElementById('mobile-menu-backdrop')?.addEventListener('click', closeMenu);
+  </script>
+</Layout>

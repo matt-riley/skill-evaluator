@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+import Seo from '@jdevalk/astro-seo-graph/Seo.astro';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { title, description, noindex = false } = Astro.props;
+
+const siteUrl = 'https://skilleval.mattriley.tools';
+const canonicalUrl = Astro.url.href;
+const defaultDescription = 'Documentation for skill-evaluator, a CLI tool for automating eval-driven skill iteration.';
+const pageDescription = description || defaultDescription;
+
+const csp = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+---
+
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <ClientRouter />
+
+    <Seo
+      title={title}
+      titleTemplate="%s | Skill Evaluator Documentation"
+      description={pageDescription}
+      canonical={canonicalUrl}
+      siteName="Skill Eval"
+      ogType="website"
+      ogImage={`${siteUrl}/og-image.png`}
+      ogImageAlt="Skill Eval Documentation"
+      ogImageWidth={1200}
+      ogImageHeight={675}
+      noindex={noindex}
+      extraLinks={[{ rel: 'sitemap', type: 'application/xml', href: '/sitemap-index.xml' }]}
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    </noscript>
+  </head>
+  <body class="font-sans antialiased overflow-x-hidden">
+    <slot />
+  </body>
+</html>

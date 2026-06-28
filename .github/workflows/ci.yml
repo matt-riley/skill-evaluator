@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  ci:
+    uses: matt-riley/matt-riley-ci/.github/workflows/ci.yml@v2
+    with:
+      test: true
+      lint: true
+      vet: true
+      fmt: true
+
+  govulncheck:
+    needs: ci
+    if: ${{ always() }}
+    uses: matt-riley/matt-riley-ci/.github/workflows/go-security.yml@v2

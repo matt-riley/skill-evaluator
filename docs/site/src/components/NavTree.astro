@@ -1,0 +1,89 @@
+---
+import { GITHUB_URL } from '../utils/routing';
+
+interface Props {
+  currentSlug: string;
+  docLinks: any[];
+  guideLinks: any[];
+  adrLinks: any[];
+  changelogLink: any;
+  isAnyGuideActive: boolean;
+  isAnyAdrActive: boolean;
+}
+const { currentSlug, docLinks, guideLinks, adrLinks, changelogLink, isAnyGuideActive, isAnyAdrActive } = Astro.props;
+
+function linkClass(active: boolean, accent: string) {
+  return `block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black ${
+    active
+      ? `bg-neo-${accent} text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-1 rotate-1`
+      : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1'
+  }`;
+}
+---
+
+<a href="/" class={linkClass(currentSlug === 'readme', 'blue')} aria-current={currentSlug === 'readme' ? 'page' : undefined}>
+  🏠 Home
+</a>
+
+<details class="group" open={!isAnyGuideActive && !isAnyAdrActive && currentSlug !== 'readme' && currentSlug !== 'changelog'}>
+  <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+    Documentation 📚
+    <span class="transform group-open:rotate-180 transition-transform">▼</span>
+  </summary>
+  <ul class="space-y-4 mt-2">
+    {docLinks.map(link => (
+      <li>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'blue')} aria-current={link.path === currentSlug ? 'page' : undefined}>
+          ✨ {link.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</details>
+
+<details class="group" open={isAnyGuideActive}>
+  <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+    Guides 📖
+    <span class="transform group-open:rotate-180 transition-transform">▼</span>
+  </summary>
+  <ul class="space-y-4 mt-2">
+    {guideLinks.map(link => (
+      <li>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'pink')} aria-current={link.path === currentSlug ? 'page' : undefined}>
+          {link.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</details>
+
+<details class="group" open={isAnyAdrActive}>
+  <summary class="text-sm font-black tracking-widest text-black/60 uppercase mb-4 px-2 cursor-pointer list-none flex justify-between items-center hover:text-black transition-colors">
+    Arch Decisions 🏗️
+    <span class="transform group-open:rotate-180 transition-transform">▼</span>
+  </summary>
+  <ul class="space-y-4 mt-2">
+    {adrLinks.map(link => (
+      <li>
+        <a href={`/${link.path}/`} class={linkClass(link.path === currentSlug, 'green') + ' truncate'} title={link.title} aria-current={link.path === currentSlug ? 'page' : undefined}>
+          {link.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</details>
+
+{changelogLink && (
+  <a href={`/${changelogLink.path}/`} class={linkClass(changelogLink.path === currentSlug, 'purple')}>
+    📋 {changelogLink.title}
+  </a>
+)}
+
+<a
+  href={GITHUB_URL}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="block text-lg px-5 py-3 rounded-2xl transition-all duration-300 font-bold border-4 border-black bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1"
+>
+  🐙 GitHub
+</a>

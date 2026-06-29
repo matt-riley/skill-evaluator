@@ -168,11 +168,7 @@ func convertSession(stepsByHash map[string]agitStep, diffsByHash map[string]*agi
 
 		ce.ExpectedOutput = buildExpectedOutput(assistant, row, step, diff)
 
-		ce.Assertions = buildAssertions(diff, assistant)
-		if len(ce.Assertions) == 0 {
-			// Always at least one LLM-judged assertion so grading has something.
-			ce.Assertions = []string{llmAssertion(assistant)}
-		}
+		ce.Assertions = buildAssertions(diff, step.Outcome)
 		out = append(out, ce)
 	}
 	return out
@@ -222,12 +218,12 @@ func buildExpectedOutput(assistant string, row agitLogRow, step agitStep, diff *
 }
 
 // buildAssertions emits deterministic file_exists assertions for genuinely new
-// artifacts, plus one LLM-judged assertion capturing the recorded change. The
-// grader only sees output files (not transcripts), so every assertion must be
-// checkable against produced files.
-func buildAssertions(diff *agitDiff, assistant string) []string {
+// artifacts, plus one LLM-judged assertion that checks the output implements
+// the requested change without embedding brittle raw text from the recorded
+// assistant response.
+func buildAssertions(diff *agitDiff, outcome string) []string {
 	if diff == nil {
-		return nil
+		diff = &agitDiff{}
 	}
 	var out []string
 	for _, c := range diff.Changes {
@@ -244,17 +240,18 @@ func buildAssertions(diff *agitDiff, assistant string) []string {
 			break
 		}
 	}
-	if assistant != "" {
-		out = append(out, llmAssertion(assistant))
-	}
+	out = append(out, llmAssertion(outcome))
 	return out
 }
 
-func llmAssertion(assistant string) string {
-	if assistant == "" {
-		return "The produced output implements the requested change."
+// llmAssertion returns a stable LLM-judged assertion. If outcome is non-empty
+// it is included as context; otherwise a generic assertion is used. Raw
+// assistant text is deliberately NOT embedded — it makes evals brittle.
+func llmAssertion(outcome string) string {
+	if outcome != "" {
+		return fmt.Sprintf("The produced output correctly implements the user's request, achieving the outcome: %s.", outcome)
 	}
-	return fmt.Sprintf("The produced output matches the recorded reference: %s", snippet(assistant, 200))
+	return "The produced output correctly implements the user's request."
 }
 
 func snippet(s string, n int) string {

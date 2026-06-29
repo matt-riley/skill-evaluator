@@ -71,7 +71,7 @@ func TestImportAgitConvertSession(t *testing.T) {
 	if containsString(e1.Assertions, "file_exists: x.json") {
 		t.Errorf("eval 1 should filter dotfile noise; got %v", e1.Assertions)
 	}
-	if !anyContains(e1.Assertions, "matches the recorded reference") {
+	if !anyContains(e1.Assertions, "correctly implements") {
 		t.Errorf("eval 1 missing LLM assertion; got %v", e1.Assertions)
 	}
 	if !strings.Contains(e1.ExpectedOutput, "committed") {
@@ -116,7 +116,7 @@ func TestImportAgitNoAddedFilesFallsBackToLLM(t *testing.T) {
 			t.Errorf("no added files should yield no file_exists assertion; got %q", a)
 		}
 	}
-	if !reflect.DeepEqual(got[0].Assertions, []string{llmAssertion("Refactored auth.go. Tests pass.")}) {
+	if !reflect.DeepEqual(got[0].Assertions, []string{llmAssertion("")}) {
 		t.Errorf("expected single LLM fallback, got %v", got[0].Assertions)
 	}
 }

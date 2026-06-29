@@ -166,7 +166,7 @@ func TestVerboseFlagParsed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subcmd, args, verbose := parseGlobalArgs(tt.in)
+			subcmd, args, verbose, _ := parseGlobalArgs(tt.in)
 			if subcmd != tt.wantSubcmd {
 				t.Errorf("subcmd = %q, want %q", subcmd, tt.wantSubcmd)
 			}

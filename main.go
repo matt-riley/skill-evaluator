@@ -379,7 +379,7 @@ func cmdRun(args []string) error {
 					runCfg.Defaults.Model = cfg.Defaults.Model
 				}
 
-				r, err := runEval(ctx, runCfg, skillDir, j.eval, ws, iter, j.modelKey, j.config, baselinePath)
+				r, err := runEval(ctx, runCfg, skillDir, j.eval, ws, iter, j.modelKey, j.config, baselinePath, nil)
 				results[idx] = r
 				errs[idx] = err
 			}(i, job)
@@ -517,7 +517,7 @@ func cmdGrade(args []string) error {
 				}
 
 				fmt.Printf("  eval %d %s/%s... ", eval.ID, mk, config)
-				gf, err := gradeEval(ctx, cfg, eval, ws, iter, gradeKey, config)
+				gf, err := gradeEval(ctx, cfg, eval, ws, iter, gradeKey, config, nil)
 				if err != nil {
 					fmt.Printf("error: %v\n", err)
 					continue
@@ -746,7 +746,7 @@ func runFixPhase(modelsRaw string, maxAttempts int) error {
 
 			fmt.Printf("  eval %d/%s: %d/%d failed — fixing...\n", eval.ID, mk, gf.Summary.Failed, gf.Summary.Total)
 
-			fr, err := fixEval(ctx, cfg, skillDir, eval, ws, iter, mk, "", maxAttempts)
+			fr, err := fixEval(ctx, cfg, skillDir, eval, ws, iter, mk, "", maxAttempts, nil)
 			if err != nil {
 				fmt.Printf("    fix error: %v\n", err)
 				continue

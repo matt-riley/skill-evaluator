@@ -199,11 +199,9 @@ func TestGradeMixedMatchers(t *testing.T) {
 	_ = os.MkdirAll(outDir, 0o755)
 	_ = os.WriteFile(filepath.Join(outDir, "results.csv"), []byte("ok"), 0o644)
 
-	orig := buildAgentCmd
-	buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
+	mockCmd := CmdBuilder(func(agent, model, task, skillPath string) *exec.Cmd {
 		return exec.Command("echo", `{"assertion_results": [{"text": "The output is useful", "passed": true, "evidence": "looks good"}]}`)
-	}
-	defer func() { buildAgentCmd = orig }()
+	})
 
 	cfg := &Config{
 		Defaults: DefaultsConfig{Agent: "pi"},
@@ -217,7 +215,7 @@ func TestGradeMixedMatchers(t *testing.T) {
 		},
 	}
 
-	gf, err := gradeFromOutput(context.Background(), cfg, eval, outDir, gradingPath, "eval 1 (with_skill)")
+	gf, err := gradeFromOutput(context.Background(), cfg, eval, outDir, gradingPath, "eval 1 (with_skill)", mockCmd)
 	if err != nil {
 		t.Fatalf("gradeFromOutput error: %v", err)
 	}

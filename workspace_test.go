@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -129,7 +130,7 @@ func TestGradeBlocksIncompleteLock(t *testing.T) {
 
 	t.Chdir(skillDir)
 
-	err := cmdGrade(nil)
+	err := cmdGrade(context.Background(), nil)
 	if err == nil {
 		t.Fatal("cmdGrade expected error for running lock")
 	}

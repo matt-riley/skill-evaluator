@@ -7,6 +7,10 @@ describe("routing", () => {
       expect(cleanPath("../../../../README.md")).toBe("README");
     });
 
+    test("given ../../../../docs/index.md returns index", () => {
+      expect(cleanPath("../../../../docs/index.md")).toBe("index");
+    });
+
     test("given ../../../../docs/adr/0001-record.md returns adr/0001-record", () => {
       expect(cleanPath("../../../../docs/adr/0001-record.md")).toBe("adr/0001-record");
     });
@@ -17,13 +21,13 @@ describe("routing", () => {
   });
 
   describe("buildNavLinks", () => {
-    test("orders docs logically, names README as Home, keeps ADRs above Changelog", () => {
+    test("orders docs logically, names index as Home, keeps ADRs above Changelog", () => {
       const keys = [
         "../../../../docs/adr/0002-second.md",
         "../../../../docs/setup.md",
         "../../../../docs/adr/0001-record.md",
         "../../../../CHANGELOG.md",
-        "../../../../README.md",
+        "../../../../docs/index.md",
       ];
       const navLinks = buildNavLinks(keys);
 

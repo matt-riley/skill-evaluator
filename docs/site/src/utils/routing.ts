@@ -8,7 +8,7 @@ export function cleanPath(key: string): string {
 type NavMeta = { path: string; title?: string };
 
 const ORDERED_PAGES: NavMeta[] = [
-  { path: "readme", title: "Home" },
+  { path: "index", title: "Home" },
   { path: "quick-start" },
   { path: "eval-workflow" },
   { path: "commands" },
@@ -78,4 +78,4 @@ export function extractDescription(raw: string): string {
 export const GITHUB_URL = "https://github.com/matt-riley/skill-evaluator";
 
 /** File names (lowercase) excluded from the documentation nav — agent instruction files. */
-export const EXCLUDED_DOCS = ["agents.md", "claude.md", "context.md"];
+export const EXCLUDED_DOCS = ["agents.md", "claude.md", "context.md", "readme.md"];

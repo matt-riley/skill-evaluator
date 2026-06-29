@@ -7,9 +7,10 @@ export async function getStaticPaths() {
   const rootDocs = import.meta.glob('../../../../*.md', { eager: true });
   const adrDocs = import.meta.glob('../../../../docs/adr/*.md', { eager: true });
   const guideDocs = import.meta.glob('../../../../docs/guides/*.md', { eager: true });
+  const homeDocs = import.meta.glob('../../../../docs/index.md', { eager: true });
 
   const allFiles: Record<string, any> = Object.fromEntries(
-    Object.entries({ ...rootDocs, ...adrDocs, ...guideDocs }).filter(([key]) =>
+    Object.entries({ ...rootDocs, ...adrDocs, ...guideDocs, ...homeDocs }).filter(([key]) =>
       !EXCLUDED_DOCS.some((doc) => key.toLowerCase().endsWith(doc))
     )
   );
@@ -19,7 +20,7 @@ export async function getStaticPaths() {
 
   return Object.entries(allFiles).map(([key, doc]) => {
     const relativePath = cleanPath(key).toLowerCase();
-    const slug = relativePath === 'readme' ? undefined : relativePath;
+    const slug = (relativePath === 'readme' || relativePath === 'index') ? undefined : relativePath;
 
     return {
       params: { slug },
@@ -31,16 +32,16 @@ export async function getStaticPaths() {
 const { doc, navLinks } = Astro.props;
 const Content = doc.default;
 
-const currentSlug = (Astro.params.slug || 'README').toLowerCase();
+const currentSlug = (Astro.params.slug || 'index').toLowerCase();
 
 const isAnyAdrActive = currentSlug.startsWith('adr/');
 const isAnyGuideActive = currentSlug.startsWith('guides/');
-const docLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog' && link.path !== 'readme');
+const docLinks = navLinks.filter(link => !link.isAdr && !link.isGuide && link.path !== 'changelog' && link.path !== 'readme' && link.path !== 'index');
 const guideLinks = navLinks.filter(link => link.isGuide);
 const adrLinks = navLinks.filter(link => link.isAdr);
 const changelogLink = navLinks.find(link => link.path === 'changelog');
 
-const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' ? 'Home' : currentSlug);
+const pageTitle = doc.frontmatter?.title || (currentSlug === 'readme' || currentSlug === 'index' ? 'Home' : currentSlug);
 const description = doc.frontmatter?.description || extractDescription(doc.rawContent());
 ---
 <Layout title={pageTitle} description={description}>
@@ -137,7 +138,7 @@ const description = doc.frontmatter?.description || extractDescription(doc.rawCo
     });
 
     function closeMenu() {
-      if (!menu || !drawer) return;
+      if (!menu || !drawer || !toggle) return;
       drawer.classList.remove('translate-x-0');
       drawer.classList.add('-translate-x-full');
       toggle.setAttribute('aria-expanded', 'false');

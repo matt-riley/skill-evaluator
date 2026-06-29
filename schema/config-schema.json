@@ -13,7 +13,7 @@
         "agent": {
           "type": "string",
           "description": "Agent runtime CLI name.",
-          "enum": ["pi", "claude", "copilot", "codex"]
+          "enum": ["pi", "claude", "codex"]
         },
         "model": {
           "type": "string",
@@ -30,7 +30,7 @@
         "agent": {
           "type": "string",
           "description": "Agent runtime CLI name for grading.",
-          "enum": ["pi", "claude", "copilot", "codex"]
+          "enum": ["pi", "claude", "codex"]
         },
         "model": {
           "type": "string",
@@ -48,7 +48,7 @@
           "agent": {
             "type": "string",
             "description": "Agent runtime CLI name.",
-            "enum": ["pi", "claude", "copilot", "codex"]
+            "enum": ["pi", "claude", "codex"]
           },
           "model": {
             "type": "string",

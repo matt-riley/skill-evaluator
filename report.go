@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -159,7 +160,7 @@ func cmdReport(args []string) error {
 	data.Suggestions = buildSuggestions(data)
 
 	if *llmFlag {
-		notes, err := llmCoachNotes(cfg, data, bf)
+		notes, err := llmCoachNotes(context.Background(), cfg, data, bf, nil)
 		if err != nil {
 			data.Suggestions = append(data.Suggestions, fmt.Sprintf("LLM coach notes unavailable: %v", err))
 		} else {
@@ -196,7 +197,7 @@ func loadBenchmarkFile(workspace string, iter int) (*BenchmarkFile, error) {
 }
 
 // llmCoachNotes asks the configured judge agent for extra coaching advice.
-func llmCoachNotes(cfg *Config, data *ReportData, bf *BenchmarkFile) (string, error) {
+func llmCoachNotes(ctx context.Context, cfg *Config, data *ReportData, bf *BenchmarkFile, cmdFn CmdBuilder) (string, error) {
 	payload, err := json.MarshalIndent(bf, "", "  ")
 	if err != nil {
 		return "", err
@@ -226,7 +227,10 @@ Benchmark JSON:
 		model = cfg.Defaults.Model
 	}
 
-	cmd := buildAgentCmd(agent, model, prompt, "")
+	if cmdFn == nil {
+		cmdFn = buildAgentCmd
+	}
+	cmd := cmdFn(agent, model, prompt, "")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err

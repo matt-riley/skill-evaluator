@@ -12,14 +12,14 @@ import (
 )
 
 // gradeEval shells out to the judge agent to grade assertions against outputs.
-func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, configLabel string) (*GradingFile, error) {
+func gradeEval(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, configLabel string, cmdFn CmdBuilder) (*GradingFile, error) {
 	outDir := filepath.Join(evalPath(workspace, iteration, eval.ID, modelKey), configLabel, "outputs")
 	gradingPath := filepath.Join(evalPath(workspace, iteration, eval.ID, modelKey), configLabel, "grading.json")
-	return gradeFromOutput(ctx, cfg, eval, outDir, gradingPath, fmt.Sprintf("eval %d (%s)", eval.ID, configLabel))
+	return gradeFromOutput(ctx, cfg, eval, outDir, gradingPath, fmt.Sprintf("eval %d (%s)", eval.ID, configLabel), cmdFn)
 }
 
 // gradeFromOutput evaluates deterministic assertions locally and sends the rest to the judge.
-func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradingPath, contextLabel string) (*GradingFile, error) {
+func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradingPath, contextLabel string, cmdFn CmdBuilder) (*GradingFile, error) {
 	if len(eval.Assertions) == 0 {
 		return nil, fmt.Errorf("eval %d has no assertions to grade", eval.ID)
 	}
@@ -55,7 +55,10 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 		}
 
 		logger.Debug("grading", "eval", eval.ID, "assertions", len(llmAssertions))
-		cmd := buildAgentCmd(judgeAgent, judgeModel, prompt, "")
+		if cmdFn == nil {
+			cmdFn = buildAgentCmd
+		}
+		cmd := cmdFn(judgeAgent, judgeModel, prompt, "")
 		cmd.Dir = outDir
 		output, err := cmd.Output()
 		if err != nil {
@@ -295,7 +298,7 @@ func extractFailedReasoning(gf *GradingFile) string {
 }
 
 // gradeFixAttempt grades a fix attempt's outputs.
-func gradeFixAttempt(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, attempt int) (*GradingFile, error) {
+func gradeFixAttempt(ctx context.Context, cfg *Config, eval Eval, workspace string, iteration int, modelKey string, attempt int, cmdFn CmdBuilder) (*GradingFile, error) {
 	fixDir := filepath.Join(evalPath(workspace, iteration, eval.ID, modelKey), "with_skill", fmt.Sprintf("fix-%d", attempt))
-	return gradeFromOutput(ctx, cfg, eval, filepath.Join(fixDir, "outputs"), filepath.Join(fixDir, "grading.json"), fmt.Sprintf("fix-%d for eval %d", attempt, eval.ID))
+	return gradeFromOutput(ctx, cfg, eval, filepath.Join(fixDir, "outputs"), filepath.Join(fixDir, "grading.json"), fmt.Sprintf("fix-%d for eval %d", attempt, eval.ID), cmdFn)
 }

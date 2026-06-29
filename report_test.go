@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -59,7 +60,7 @@ func TestCmdReportGeneratesHTML(t *testing.T) {
 
 	t.Chdir(skillDir)
 
-	if err := cmdReport(nil); err != nil {
+	if err := cmdReport(context.Background(), nil); err != nil {
 		t.Fatalf("cmdReport failed: %v", err)
 	}
 

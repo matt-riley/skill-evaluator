@@ -1,12 +1,17 @@
 package main
 
-import "os/exec"
+import (
+	"context"
+	"os/exec"
+)
 
 // AgentRunner knows how to build a command for a specific agent runtime.
 // Each implementation encapsulates the CLI flags and conventions for one agent.
 type AgentRunner interface {
 	// Build returns an exec.Cmd configured for this agent.
 	Build(model, task, skillPath string) *exec.Cmd
+	// BuildContext returns an exec.Cmd bound to the given context for cancellation/timeout.
+	BuildContext(ctx context.Context, model, task, skillPath string) *exec.Cmd
 }
 
 // newAgentRunner returns the appropriate runner for the given agent name.
@@ -28,6 +33,10 @@ func newAgentRunner(agent string) AgentRunner {
 type piRunner struct{}
 
 func (r *piRunner) Build(model, task, skillPath string) *exec.Cmd {
+	return r.BuildContext(context.Background(), model, task, skillPath)
+}
+
+func (r *piRunner) BuildContext(ctx context.Context, model, task, skillPath string) *exec.Cmd {
 	// pi docs: --mode json emits an event stream with usage.totalTokens;
 	// -p/--no-session keep it ephemeral, --no-context-files keeps context clean,
 	// --skill <path> loads the skill into the system prompt properly.
@@ -39,13 +48,17 @@ func (r *piRunner) Build(model, task, skillPath string) *exec.Cmd {
 		args = append(args, "--skill", skillPath)
 	}
 	args = append(args, task)
-	return exec.Command("pi", args...)
+	return exec.CommandContext(ctx, "pi", args...)
 }
 
 // claudeRunner builds commands for the Claude Code CLI.
 type claudeRunner struct{}
 
 func (r *claudeRunner) Build(model, task, _ string) *exec.Cmd {
+	return r.BuildContext(context.Background(), model, task, "")
+}
+
+func (r *claudeRunner) BuildContext(ctx context.Context, model, task, _ string) *exec.Cmd {
 	// claude --help: -p (print), --no-session-persistence, --model
 	// No --skill flag — skill path is embedded in the prompt text
 	args := []string{"-p", "--no-session-persistence"}
@@ -53,13 +66,17 @@ func (r *claudeRunner) Build(model, task, _ string) *exec.Cmd {
 		args = append(args, "--model", model)
 	}
 	args = append(args, task)
-	return exec.Command("claude", args...)
+	return exec.CommandContext(ctx, "claude", args...)
 }
 
 // codexRunner builds commands for the OpenAI Codex CLI.
 type codexRunner struct{}
 
 func (r *codexRunner) Build(model, task, _ string) *exec.Cmd {
+	return r.BuildContext(context.Background(), model, task, "")
+}
+
+func (r *codexRunner) BuildContext(ctx context.Context, model, task, _ string) *exec.Cmd {
 	// codex exec --help: exec subcommand, -m (model), --ephemeral
 	// No --skill flag — skill path is embedded in the prompt text
 	args := []string{"exec", "--ephemeral"}
@@ -67,7 +84,7 @@ func (r *codexRunner) Build(model, task, _ string) *exec.Cmd {
 		args = append(args, "-m", model)
 	}
 	args = append(args, task)
-	return exec.Command("codex", args...)
+	return exec.CommandContext(ctx, "codex", args...)
 }
 
 // genericRunner is the fallback for unknown agent runtimes.
@@ -76,6 +93,10 @@ type genericRunner struct {
 }
 
 func (r *genericRunner) Build(model, task, skillPath string) *exec.Cmd {
+	return r.BuildContext(context.Background(), model, task, skillPath)
+}
+
+func (r *genericRunner) BuildContext(ctx context.Context, model, task, skillPath string) *exec.Cmd {
 	args := []string{}
 	if model != "" {
 		args = append(args, "--model", model)
@@ -84,5 +105,5 @@ func (r *genericRunner) Build(model, task, skillPath string) *exec.Cmd {
 		args = append(args, "--skill", skillPath)
 	}
 	args = append(args, task)
-	return exec.Command(r.name, args...)
+	return exec.CommandContext(ctx, r.name, args...)
 }

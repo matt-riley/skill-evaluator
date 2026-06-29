@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -274,7 +275,7 @@ func shortHash(h string) string {
 
 // --- command ---
 
-func cmdImportAgit(args []string) error {
+func cmdImportAgit(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet("import-agit", flag.ContinueOnError)
 	session := fs.String("session", "", "Specific agit session (origin/id); default: most recent")
 	skillDir := fs.String("skill", "", "Skill directory to write evals.json into (default: detect upward)")

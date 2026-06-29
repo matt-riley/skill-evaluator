@@ -199,7 +199,7 @@ func TestGradeMixedMatchers(t *testing.T) {
 	_ = os.MkdirAll(outDir, 0o755)
 	_ = os.WriteFile(filepath.Join(outDir, "results.csv"), []byte("ok"), 0o644)
 
-	mockCmd := CmdBuilder(func(agent, model, task, skillPath string) *exec.Cmd {
+	mockCmd := CmdBuilder(func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd {
 		return exec.Command("echo", `{"assertion_results": [{"text": "The output is useful", "passed": true, "evidence": "looks good"}]}`)
 	})
 

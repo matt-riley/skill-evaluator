@@ -110,7 +110,7 @@ const reportTemplate = `<!doctype html>
 </html>`
 
 // cmdReport generates an HTML report from a benchmark.json file.
-func cmdReport(args []string) error {
+func cmdReport(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet("report", flag.ContinueOnError)
 	iterFlag := fs.Int("iteration", 0, "Target iteration (default: latest)")
 	llmFlag := fs.Bool("llm-suggestions", false, "Ask the judge agent for additional suggestions")
@@ -230,7 +230,7 @@ Benchmark JSON:
 	if cmdFn == nil {
 		cmdFn = buildAgentCmd
 	}
-	cmd := cmdFn(agent, model, prompt, "")
+	cmd := cmdFn(ctx, agent, model, prompt, "")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err

@@ -58,7 +58,7 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 		if cmdFn == nil {
 			cmdFn = buildAgentCmd
 		}
-		cmd := cmdFn(judgeAgent, judgeModel, prompt, "")
+		cmd := cmdFn(ctx, judgeAgent, judgeModel, prompt, "")
 		cmd.Dir = outDir
 		output, err := cmd.Output()
 		if err != nil {

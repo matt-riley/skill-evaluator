@@ -334,6 +334,7 @@ func cmdRun(args []string) error {
 
 	// Batch size: 2 concurrent runs
 	sem := make(chan struct{}, 2)
+	var hadFailure bool
 	type runJob struct {
 		eval     Eval
 		modelKey string
@@ -387,7 +388,13 @@ func cmdRun(args []string) error {
 
 		for i, job := range jobs {
 			if errs[i] != nil {
-				return fmt.Errorf("eval %d %s/%s: %w", job.eval.ID, job.modelKey, job.config, errs[i])
+				fmt.Printf("  %s/%-14s FAILED: %v\n", job.modelKey, job.config, errs[i])
+				// Mark as completed with failure so resume doesn't re-run it.
+				if !isCompleted(lock, job.eval.ID, job.modelKey, job.config) {
+					lock.Completed = append(lock.Completed, RunIdentity{EvalID: job.eval.ID, Model: job.modelKey, Config: job.config})
+				}
+				hadFailure = true
+				continue
 			}
 			r := results[i]
 			if !isCompleted(lock, job.eval.ID, job.modelKey, job.config) {
@@ -410,6 +417,9 @@ func cmdRun(args []string) error {
 	}
 
 	fmt.Printf("\nDone. Results in %s\n", iterationPath(ws, iter))
+	if hadFailure {
+		return fmt.Errorf("one or more evals failed; check output above for details")
+	}
 	return nil
 }
 

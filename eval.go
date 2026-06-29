@@ -10,11 +10,21 @@ type EvalFile struct {
 
 // Eval is a single test case.
 type Eval struct {
-	ID             int      `json:"id"`
-	Prompt         string   `json:"prompt"`
-	ExpectedOutput string   `json:"expected_output"`
-	Files          []string `json:"files,omitempty"`
-	Assertions     []string `json:"assertions,omitempty"`
+	ID             int         `json:"id"`
+	Prompt         string      `json:"prompt"`
+	ExpectedOutput string      `json:"expected_output"`
+	Files          []string    `json:"files,omitempty"`
+	Assertions     []string    `json:"assertions,omitempty"`
+	Source         *EvalSource `json:"source,omitempty"`
+}
+
+// EvalSource records where an eval came from so failing evals can be
+// traced back to the session that produced them.
+type EvalSource struct {
+	AgitOrigin    string `json:"agit_origin,omitempty"`
+	AgitSessionID string `json:"agit_session_id,omitempty"`
+	AgitStepHash  string `json:"agit_step_hash,omitempty"`
+	Timestamp     int64  `json:"timestamp,omitempty"`
 }
 
 // MatcherType identifies how an assertion should be evaluated.

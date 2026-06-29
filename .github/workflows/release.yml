@@ -16,14 +16,14 @@ permissions:
 
 jobs:
   release-please:
-    uses: matt-riley/matt-riley-ci/.github/workflows/release-please.yml@bcaf4ae43edf7d26421741424b82c842c83e55ce # v1.9.2
+    uses: matt-riley/matt-riley-ci/.github/workflows/release-please.yml@v2
     secrets:
       token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
   goreleaser:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
-    uses: matt-riley/matt-riley-ci/.github/workflows/go-goreleaser.yml@bcaf4ae43edf7d26421741424b82c842c83e55ce # v1.9.2
+    uses: matt-riley/matt-riley-ci/.github/workflows/go-goreleaser.yml@v2
     secrets:
       github-token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
       homebrew-tap-token: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN || secrets.RELEASE_PLEASE_TOKEN }}

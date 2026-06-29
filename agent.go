@@ -75,6 +75,14 @@ type genericRunner struct {
 	name string
 }
 
-func (r *genericRunner) Build(_, task, _ string) *exec.Cmd {
-	return exec.Command(r.name, task)
+func (r *genericRunner) Build(model, task, skillPath string) *exec.Cmd {
+	args := []string{}
+	if model != "" {
+		args = append(args, "--model", model)
+	}
+	if skillPath != "" {
+		args = append(args, "--skill", skillPath)
+	}
+	args = append(args, task)
+	return exec.Command(r.name, args...)
 }

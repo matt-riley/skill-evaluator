@@ -14,7 +14,7 @@ import (
 )
 
 // runEval executes one eval (with-skill or baseline) and returns the result.
-func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, workspace string, iteration int, modelKey string, configLabel string, baselinePath string) (*RunResult, error) {
+func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, workspace string, iteration int, modelKey string, configLabel string, baselinePath string, cmdFn CmdBuilder) (*RunResult, error) {
 	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	outDir := filepath.Join(evalDir, configLabel, "outputs")
 	if err := ensureDir(outDir); err != nil {
@@ -35,8 +35,12 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	// Build the task prompt following the agentskills.io convention
 	task := buildPrompt(skillPath, eval, outDir, "")
 
+	if cmdFn == nil {
+		cmdFn = buildAgentCmd
+	}
+
 	start := time.Now()
-	cmd := buildAgentCmd(agent, model, task, skillPath)
+	cmd := cmdFn(agent, model, task, skillPath)
 	cmd.Dir = skillDir
 	logger.Debug("running agent", "agent", agent, "model", model, "dir", cmd.Dir)
 	// ponytail: capture combined stdout+stderr — token counts may be on stderr
@@ -74,9 +78,13 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 	return ""
 }
 
+// CmdBuilder constructs an exec.Cmd for a given agent runtime.
+type CmdBuilder = func(agent, model, task, skillPath string) *exec.Cmd
+
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
-// ponytail: var (not func) so tests can swap it without a separate seam.
-var buildAgentCmd = func(agent, model, task, skillPath string) *exec.Cmd {
+// Prefer passing CmdBuilder as a parameter to functions instead of using
+// this directly — it avoids data races when tests swap it under t.Parallel().
+var buildAgentCmd CmdBuilder = func(agent, model, task, skillPath string) *exec.Cmd {
 	return newAgentRunner(agent).Build(model, task, skillPath)
 }
 
@@ -198,7 +206,7 @@ func buildPrompt(skillPath string, eval Eval, outDir, critique string) string {
 // It re-runs the agent with critique from failed assertions until all pass,
 // the score plateaus, or maxAttempts is exhausted.
 func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
-	workspace string, iteration int, modelKey string, baselinePath string, maxAttempts int) (*FixResult, error) {
+	workspace string, iteration int, modelKey string, baselinePath string, maxAttempts int, cmdFn CmdBuilder) (*FixResult, error) {
 
 	evalDir := evalPath(workspace, iteration, eval.ID, modelKey)
 	gradingPath := filepath.Join(evalDir, "with_skill", "grading.json")
@@ -228,6 +236,10 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 	agent := cfg.Defaults.Agent
 	model := cfg.Defaults.Model
 
+	if cmdFn == nil {
+		cmdFn = buildAgentCmd
+	}
+
 	for attempt := 2; attempt <= maxAttempts+1; attempt++ {
 		critique := lastFailed
 		fixDir := filepath.Join(evalDir, "with_skill", fmt.Sprintf("fix-%d", attempt))
@@ -239,7 +251,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		// Run agent with critique
 		task := buildPrompt(skillPath, eval, outDir, critique)
 		start := time.Now()
-		cmd := buildAgentCmd(agent, model, task, skillPath)
+		cmd := cmdFn(agent, model, task, skillPath)
 		cmd.Dir = skillDir
 		output, _ := cmd.CombinedOutput()
 		elapsed := time.Since(start)
@@ -254,7 +266,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		}
 
 		// Grade this fix attempt
-		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, modelKey, attempt)
+		gf, err := gradeFixAttempt(ctx, cfg, eval, workspace, iteration, modelKey, attempt, cmdFn)
 		if err != nil {
 			// Can't grade — stop fixing, keep previous best
 			break

@@ -40,7 +40,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	}
 
 	start := time.Now()
-	cmd := cmdFn(agent, model, task, skillPath)
+	cmd := cmdFn(ctx, agent, model, task, skillPath)
 	cmd.Dir = skillDir
 	logger.Debug("running agent", "agent", agent, "model", model, "dir", cmd.Dir)
 	// ponytail: capture combined stdout+stderr — token counts may be on stderr
@@ -49,7 +49,11 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 
 	if err != nil {
 		result.Status = "failed"
-		logger.Debug("agent run failed", "error", err, "output", string(output))
+		if ctx.Err() == context.DeadlineExceeded {
+			logger.Debug("agent run timed out", "timeout", ctx.Err())
+		} else {
+			logger.Debug("agent run failed", "error", err, "output", string(output))
+		}
 	}
 
 	result.Timing = &TimingData{
@@ -79,13 +83,14 @@ func resolveSkillPath(skillDir, configLabel, baselinePath string) string {
 }
 
 // CmdBuilder constructs an exec.Cmd for a given agent runtime.
-type CmdBuilder = func(agent, model, task, skillPath string) *exec.Cmd
+// The context enables cancellation and timeout propagation to the subprocess.
+type CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd
 
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
 // Prefer passing CmdBuilder as a parameter to functions instead of using
 // this directly — it avoids data races when tests swap it under t.Parallel().
-var buildAgentCmd CmdBuilder = func(agent, model, task, skillPath string) *exec.Cmd {
-	return newAgentRunner(agent).Build(model, task, skillPath)
+var buildAgentCmd CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd {
+	return newAgentRunner(agent).BuildContext(ctx, model, task, skillPath)
 }
 
 // tokensFromOutput picks the right token extractor for the agent runtime.
@@ -241,6 +246,10 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 	}
 
 	for attempt := 2; attempt <= maxAttempts+1; attempt++ {
+		// Bail early if context cancelled
+		if err := ctx.Err(); err != nil {
+			break
+		}
 		critique := lastFailed
 		fixDir := filepath.Join(evalDir, "with_skill", fmt.Sprintf("fix-%d", attempt))
 		outDir := filepath.Join(fixDir, "outputs")
@@ -251,7 +260,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		// Run agent with critique
 		task := buildPrompt(skillPath, eval, outDir, critique)
 		start := time.Now()
-		cmd := cmdFn(agent, model, task, skillPath)
+		cmd := cmdFn(ctx, agent, model, task, skillPath)
 		cmd.Dir = skillDir
 		output, _ := cmd.CombinedOutput()
 		elapsed := time.Since(start)

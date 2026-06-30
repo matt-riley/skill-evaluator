@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -178,10 +179,33 @@ func parseAssertion(s string) ParsedAssertion {
 	return ParsedAssertion{Original: s, Type: MatcherLLM}
 }
 
+// isPathWithin returns true if resolving child inside parent stays within parent.
+func isPathWithin(parent, child string) bool {
+	resolved := filepath.Clean(filepath.Join(parent, child))
+	return strings.HasPrefix(resolved, filepath.Clean(parent)+string(os.PathSeparator))
+}
+
+// isSafeAssertionPath validates that the file path in an assertion does not
+// contain traversal sequences or absolute paths.
+func isSafeAssertionPath(path string) bool {
+	clean := filepath.Clean(path)
+	return !strings.HasPrefix(clean, "/") &&
+		!strings.HasPrefix(clean, "..") &&
+		!strings.Contains(path, "\\")
+}
+
 // evaluateMatcher runs a deterministic matcher against output files.
 func evaluateMatcher(pa ParsedAssertion, outDir string, outputContents map[string]string) AssertionResult {
+	// Validate the assertion file path for traversal attacks
+	if !isSafeAssertionPath(pa.File) {
+		return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("rejected: assertion file path %q contains traversal or absolute path", pa.File)}
+	}
+
 	switch pa.Type {
 	case MatcherFileExists:
+		if !isPathWithin(outDir, pa.File) {
+			return AssertionResult{Text: pa.Original, Passed: false, Evidence: fmt.Sprintf("rejected: path %q escapes output directory", pa.File)}
+		}
 		_, err := os.Stat(filepath.Join(outDir, pa.File))
 		if err == nil {
 			return AssertionResult{Text: pa.Original, Passed: true, Evidence: fmt.Sprintf("file %s exists", pa.File)}
@@ -263,8 +287,9 @@ func parseGradingOutput(output string, assertions []string) (*GradingFile, error
 	}
 	raw := output[start:]
 	var gf GradingFile
-	if err := json.NewDecoder(strings.NewReader(raw)).Decode(&gf); err != nil {
-		return nil, fmt.Errorf("invalid grading JSON: %w\nraw: %s", err, truncate(raw, 500))
+	limited := io.LimitReader(strings.NewReader(raw), 10*1024*1024) // 10 MB
+	if err := json.NewDecoder(limited).Decode(&gf); err != nil {
+		return nil, fmt.Errorf("invalid grading JSON: %w", err)
 	}
 	return &gf, nil
 }

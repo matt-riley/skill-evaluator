@@ -90,6 +90,9 @@ type CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string
 // Prefer passing CmdBuilder as a parameter to functions instead of using
 // this directly — it avoids data races when tests swap it under t.Parallel().
 var buildAgentCmd CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd {
+	if err := validateModel(model); err != nil {
+		logger.Warn("invalid model name", "error", err)
+	}
 	return newAgentRunner(agent).BuildContext(ctx, model, task, skillPath)
 }
 
@@ -172,8 +175,22 @@ func detectSkillDir() (string, error) {
 }
 
 // readEvals loads evals.json from a skill directory.
+// Enforces size limits to prevent DoS via oversized inputs.
 func readEvals(skillDir string) (*EvalFile, error) {
+	const maxEvalsFileSize = 1 * 1024 * 1024 // 1 MB
+	const maxEvalCount = 100
+	const maxEvalPromptLen = 10 * 1024 // 10 KB
+	const maxEvalOutputLen = 10 * 1024 // 10 KB
+
 	path := filepath.Join(skillDir, "evals", "evals.json")
+
+	// Stat the file first to check size before reading
+	if fi, err := os.Stat(path); err != nil {
+		return nil, fmt.Errorf("reading evals.json: %w", err)
+	} else if fi.Size() > maxEvalsFileSize {
+		return nil, fmt.Errorf("evals.json is too large: %d bytes (max %d)", fi.Size(), maxEvalsFileSize)
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading evals.json: %w", err)
@@ -182,6 +199,22 @@ func readEvals(skillDir string) (*EvalFile, error) {
 	if err := json.Unmarshal(data, &ef); err != nil {
 		return nil, fmt.Errorf("parsing evals.json: %w", err)
 	}
+
+	if len(ef.Evals) > maxEvalCount {
+		return nil, fmt.Errorf("too many evals: %d (max %d)", len(ef.Evals), maxEvalCount)
+	}
+
+	// Validate individual eval field lengths
+	for i, e := range ef.Evals {
+		if len(e.Prompt) > maxEvalPromptLen {
+			return nil, fmt.Errorf("eval %d: prompt too long: %d bytes (max %d)", e.ID, len(e.Prompt), maxEvalPromptLen)
+		}
+		if len(e.ExpectedOutput) > maxEvalOutputLen {
+			return nil, fmt.Errorf("eval %d: expected_output too long: %d bytes (max %d)", e.ID, len(e.ExpectedOutput), maxEvalOutputLen)
+		}
+		_ = i
+	}
+
 	return &ef, nil
 }
 

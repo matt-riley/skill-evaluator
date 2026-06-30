@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
+	"regexp"
+	"strings"
 )
 
 // AgentRunner knows how to build a command for a specific agent runtime.
@@ -14,9 +17,27 @@ type AgentRunner interface {
 	BuildContext(ctx context.Context, model, task, skillPath string) *exec.Cmd
 }
 
+// validModelRe limits model names to known-safe characters.
+var validModelRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._:\-]*$`)
+
+// validateModel returns an error if the model string looks suspicious.
+func validateModel(model string) error {
+	if model == "" {
+		return nil // empty is fine — means use default
+	}
+	if !validModelRe.MatchString(model) {
+		return fmt.Errorf("invalid model name: %q", model)
+	}
+	return nil
+}
+
 // newAgentRunner returns the appropriate runner for the given agent name.
-// Unknown agents fall back to a generic runner that passes the task as a positional argument.
+// Rejects agent names containing path separators to prevent arbitrary binary execution.
 func newAgentRunner(agent string) AgentRunner {
+	// Reject path-like agent names as a defense-in-depth measure
+	if strings.ContainsAny(agent, "/\\") {
+		panic(fmt.Sprintf("invalid agent name (contains path separator): %q", agent))
+	}
 	switch agent {
 	case "pi":
 		return &piRunner{}

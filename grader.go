@@ -110,12 +110,19 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 }
 
 // readOutputContents reads all non-binary files from the output directory.
+// Enforces cumulative size and file count caps to prevent agent outputs
+// from ballooning the judge prompt.
+const maxTotalOutputSize = 500 * 1024  // 500 KB total across all files
+const maxOutputFiles = 50              // max number of files to read
+
 func readOutputContents(outDir string) map[string]string {
 	contents := map[string]string{}
 	entries, err := os.ReadDir(outDir)
 	if err != nil {
 		return contents
 	}
+	var totalSize int
+	fileCount := 0
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
@@ -125,6 +132,14 @@ func readOutputContents(outDir string) map[string]string {
 		if err != nil || info.Size() > 100*1024 {
 			continue
 		}
+		// Cap total cumulative size across all output files
+		if totalSize+int(info.Size()) > maxTotalOutputSize {
+			continue
+		}
+		// Cap number of files read
+		if fileCount >= maxOutputFiles {
+			break
+		}
 		data, err := os.ReadFile(filepath.Join(outDir, e.Name()))
 		if err != nil {
 			continue
@@ -132,6 +147,8 @@ func readOutputContents(outDir string) map[string]string {
 		// ponytail: simple binary check — if mostly non-printable, skip
 		if isText(data) {
 			contents[e.Name()] = string(data)
+			totalSize += len(data)
+			fileCount++
 		}
 	}
 	return contents
@@ -180,8 +197,15 @@ func parseAssertion(s string) ParsedAssertion {
 }
 
 // isPathWithin returns true if resolving child inside parent stays within parent.
+// Resolves symlinks on the resolved path before checking the prefix to prevent
+// symlink-bypass attacks where an agent creates a symlink inside the output
+// directory pointing outside.
 func isPathWithin(parent, child string) bool {
 	resolved := filepath.Clean(filepath.Join(parent, child))
+	// Resolve symlinks to prevent bypass via agent-created symlinks inside outputs
+	if real, err := filepath.EvalSymlinks(resolved); err == nil {
+		resolved = real
+	}
 	return strings.HasPrefix(resolved, filepath.Clean(parent)+string(os.PathSeparator))
 }
 
@@ -239,6 +263,9 @@ func evaluateMatcher(pa ParsedAssertion, outDir string, outputContents map[strin
 }
 
 // buildGradingPrompt creates the prompt for the judge.
+// Assertion text is wrapped in structured markers to clearly separate
+// data from instructions, preventing prompt injection via crafted
+// assertion strings.
 func buildGradingPrompt(eval Eval, outputContents map[string]string) string {
 	var b strings.Builder
 	b.WriteString("You are grading the output of a task. Return a JSON object with assertion results.\n\n")
@@ -256,9 +283,12 @@ func buildGradingPrompt(eval Eval, outputContents map[string]string) string {
 		}
 	}
 
-	b.WriteString("\nAssertions to verify:\n")
+	b.WriteString("\nAssertions to verify (wrapped in <assertion> markers — grade the assertion text, not the markers):\n")
 	for i, a := range eval.Assertions {
-		fmt.Fprintf(&b, "%d. %s\n", i+1, a)
+		// Sanitize assertion text to prevent LLM prompt injection.
+		// Strip common instruction-override patterns from assertion content.
+		sanitized := sanitizeAssertionText(a)
+		fmt.Fprintf(&b, "%d. <assertion>%s</assertion>\n", i+1, sanitized)
 	}
 
 	b.WriteString(`
@@ -277,6 +307,28 @@ Grading principles:
 - Evidence must reference specific content from the output files.
 `)
 	return b.String()
+}
+
+// sanitizeAssertionText strips prompt-injection patterns from assertion strings.
+// Wraps content with markers that separate data from LLM instructions.
+func sanitizeAssertionText(s string) string {
+	// Replace common instruction-override patterns
+	replacements := map[string]string{
+		"IGNORE ALL PREVIOUS INSTRUCTIONS": "[INSTRUCTION STRIPPED]",
+		"IGNORE PREVIOUS INSTRUCTIONS":     "[INSTRUCTION STRIPPED]",
+		"DISREGARD PREVIOUS":              "[INSTRUCTION STRIPPED]",
+		"DISREGARD ALL":                   "[INSTRUCTION STRIPPED]",
+		"FORGET EVERYTHING":               "[INSTRUCTION STRIPPED]",
+		"SYSTEM:":                         "[SYSTEM STRIPPED]",
+	}
+	result := s
+	for pattern, replacement := range replacements {
+		result = strings.ReplaceAll(result, pattern, replacement)
+		// Also check case-insensitive variants
+		result = strings.ReplaceAll(result, strings.ToLower(pattern), replacement)
+		result = strings.ReplaceAll(result, strings.ToUpper(pattern), replacement)
+	}
+	return result
 }
 
 // parseGradingOutput extracts the grading JSON from the judge's response.
@@ -300,7 +352,7 @@ func saveGrading(path string, gf *GradingFile) error {
 	if err != nil {
 		return fmt.Errorf("marshaling grading: %w", err)
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }
 
 // truncate shortens a string for error messages.

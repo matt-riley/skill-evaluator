@@ -18,6 +18,9 @@ type AgentRunner interface {
 }
 
 // validModelRe limits model names to known-safe characters.
+// Hyphens are PERMITTED because model names like "gpt-4o-mini" and "claude-sonnet-4-5"
+// are common. Defense against flag injection: validateModel also checks that the
+// model string does not start with a hyphen (prevents CLI argument confusion).
 var validModelRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._:\-]*$`)
 
 // validateModel returns an error if the model string looks suspicious.
@@ -28,26 +31,53 @@ func validateModel(model string) error {
 	if !validModelRe.MatchString(model) {
 		return fmt.Errorf("invalid model name: %q", model)
 	}
+	// Defense-in-depth: reject model strings that start with hyphens to
+	// prevent downstream CLI argument parsers from interpreting them as flags.
+	if strings.HasPrefix(model, "-") {
+		return fmt.Errorf("invalid model name (starts with hyphen): %q", model)
+	}
 	return nil
 }
 
+// validAgents is the allowlist of supported agent runtimes.
+var validAgents = map[string]bool{
+	"pi":     true,
+	"claude": true,
+	"codex":  true,
+}
+
 // newAgentRunner returns the appropriate runner for the given agent name.
-// Rejects agent names containing path separators to prevent arbitrary binary execution.
-func newAgentRunner(agent string) AgentRunner {
+// Only agents in the explicit allowlist are permitted; unknown agents
+// produce an error instead of falling through to arbitrary binary execution.
+func newAgentRunner(agent string) (AgentRunner, error) {
 	// Reject path-like agent names as a defense-in-depth measure
 	if strings.ContainsAny(agent, "/\\") {
-		panic(fmt.Sprintf("invalid agent name (contains path separator): %q", agent))
+		return nil, fmt.Errorf("invalid agent name (contains path separator): %q", agent)
+	}
+	if !validAgents[agent] {
+		return nil, fmt.Errorf("unknown agent: %q (valid: pi, claude, codex)", agent)
 	}
 	switch agent {
 	case "pi":
-		return &piRunner{}
+		return &piRunner{}, nil
 	case "claude":
-		return &claudeRunner{}
+		return &claudeRunner{}, nil
 	case "codex":
-		return &codexRunner{}
+		return &codexRunner{}, nil
 	default:
-		return &genericRunner{name: agent}
+		return nil, fmt.Errorf("unknown agent: %q (valid: pi, claude, codex)", agent)
 	}
+}
+
+// ValidateAgent checks that an agent name is in the allowlist.
+func ValidateAgent(agent string) error {
+	if strings.ContainsAny(agent, "/\\") {
+		return fmt.Errorf("invalid agent name (contains path separator): %q", agent)
+	}
+	if !validAgents[agent] {
+		return fmt.Errorf("unknown agent: %q (valid: pi, claude, codex)", agent)
+	}
+	return nil
 }
 
 // piRunner builds commands for the pi CLI.
@@ -108,23 +138,4 @@ func (r *codexRunner) BuildContext(ctx context.Context, model, task, _ string) *
 	return exec.CommandContext(ctx, "codex", args...)
 }
 
-// genericRunner is the fallback for unknown agent runtimes.
-type genericRunner struct {
-	name string
-}
-
-func (r *genericRunner) Build(model, task, skillPath string) *exec.Cmd {
-	return r.BuildContext(context.Background(), model, task, skillPath)
-}
-
-func (r *genericRunner) BuildContext(ctx context.Context, model, task, skillPath string) *exec.Cmd {
-	args := []string{}
-	if model != "" {
-		args = append(args, "--model", model)
-	}
-	if skillPath != "" {
-		args = append(args, "--skill", skillPath)
-	}
-	args = append(args, task)
-	return exec.CommandContext(ctx, r.name, args...)
-}
+// --- token extraction helpers below ---

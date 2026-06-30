@@ -102,7 +102,12 @@ func parseModels(raw string) ([]ModelConfig, error) {
 			continue
 		}
 		agent, model, _ := strings.Cut(part, ":")
-		models = append(models, ModelConfig{Agent: strings.TrimSpace(agent), Model: strings.TrimSpace(model)})
+		agent = strings.TrimSpace(agent)
+		model = strings.TrimSpace(model)
+		if err := ValidateAgent(agent); err != nil {
+			return nil, fmt.Errorf("invalid agent in --models: %w", err)
+		}
+		models = append(models, ModelConfig{Agent: agent, Model: model})
 	}
 	if len(models) == 0 {
 		return nil, fmt.Errorf("invalid --models value: %q", raw)

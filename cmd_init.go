@@ -55,7 +55,7 @@ func cmdInit(ctx context.Context, args []string) error {
 		if err != nil {
 			return fmt.Errorf("marshaling skeleton evals.json: %w", err)
 		}
-		if err := os.WriteFile(evalsPath, data, 0o644); err != nil {
+		if err := os.WriteFile(evalsPath, data, 0o600); err != nil {
 			return err
 		}
 		fmt.Printf("Created %s\n", evalsPath)
@@ -89,7 +89,12 @@ func initGlobalConfig() error {
 
 	cfg := `# Skill Evaluator global configuration
 # https://github.com/matt-riley/skill-evaluator
-
+#
+# SECURITY WARNING: Do NOT store API keys or secrets in this file.
+# Use environment variables or agent-specific credential files instead.
+# This file is written with restricted permissions (0600) but secrets
+# should never be stored in plaintext config files.
+#
 defaults:
   agent: pi
   # model: claude-sonnet-4-5   # optional, uses agent's default if unset
@@ -98,7 +103,7 @@ judge:
   agent: pi
   # model: gpt-4o-mini         # optional, cheaper model recommended for grading
 `
-	if err := os.WriteFile(cfgPath, []byte(cfg), 0o644); err != nil {
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o600); err != nil {
 		return err
 	}
 	fmt.Printf("Created %s\n", cfgPath)

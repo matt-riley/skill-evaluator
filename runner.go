@@ -52,7 +52,12 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 		if ctx.Err() == context.DeadlineExceeded {
 			logger.Debug("agent run timed out", "timeout", ctx.Err())
 		} else {
-			logger.Debug("agent run failed", "error", err, "output", string(output))
+			// Security: do NOT log full agent output at any level — it may
+			// contain API keys, PII, or other secrets from the agent's response.
+			// Log only the error message and output length for diagnostics.
+			outputLen := len(output)
+			truncatedErr := truncate(err.Error(), 200)
+			logger.Debug("agent run failed", "error", truncatedErr, "output_bytes", outputLen)
 		}
 	}
 
@@ -65,7 +70,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 	timingPath := filepath.Join(evalDir, configLabel, "timing.json")
 	if timingJSON, err := json.MarshalIndent(result.Timing, "", "  "); err != nil {
 		logger.Warn("failed to marshal timing", "error", err)
-	} else if err := os.WriteFile(timingPath, timingJSON, 0o644); err != nil {
+	} else if err := os.WriteFile(timingPath, timingJSON, 0o600); err != nil {
 		logger.Warn("failed to write timing", "path", timingPath, "error", err)
 	}
 
@@ -89,11 +94,18 @@ type CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string
 // buildAgentCmd constructs the exec.Cmd for a given agent runtime.
 // Prefer passing CmdBuilder as a parameter to functions instead of using
 // this directly — it avoids data races when tests swap it under t.Parallel().
+// Returns an error if the agent name is not in the allowlist or is path-like.
 var buildAgentCmd CmdBuilder = func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd {
 	if err := validateModel(model); err != nil {
 		logger.Warn("invalid model name", "error", err)
 	}
-	return newAgentRunner(agent).BuildContext(ctx, model, task, skillPath)
+	runner, err := newAgentRunner(agent)
+	if err != nil {
+		logger.Warn("invalid agent", "agent", agent, "error", err)
+		// Return a command that will fail with a clear error message
+		return exec.CommandContext(ctx, "false")
+	}
+	return runner.BuildContext(ctx, model, task, skillPath)
 }
 
 // tokensFromOutput picks the right token extractor for the agent runtime.
@@ -303,7 +315,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 		td.TotalTokens = tokensFromOutput(agent, string(output))
 		if tdJSON, err := json.MarshalIndent(td, "", "  "); err != nil {
 			logger.Warn("failed to marshal fix timing", "error", err)
-		} else if err := os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o644); err != nil {
+		} else if err := os.WriteFile(filepath.Join(fixDir, "timing.json"), tdJSON, 0o600); err != nil {
 			logger.Warn("failed to write fix timing", "path", filepath.Join(fixDir, "timing.json"), "error", err)
 		}
 
@@ -352,7 +364,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 	fixJSON, err := json.MarshalIndent(fr, "", "  ")
 	if err != nil {
 		logger.Warn("failed to marshal fix results", "error", err)
-	} else if err := os.WriteFile(fixPath, fixJSON, 0o644); err != nil {
+	} else if err := os.WriteFile(fixPath, fixJSON, 0o600); err != nil {
 		logger.Warn("failed to write fix results", "path", fixPath, "error", err)
 	}
 

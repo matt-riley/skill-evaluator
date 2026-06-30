@@ -104,6 +104,10 @@ const reportTemplate = `<!doctype html>
 
   {{if .LLMSuggestions}}
   <h2>LLM Coach Notes</h2>
+  {{/* SECURITY: LLMSuggestions comes from untrusted LLM output. html/template
+       auto-escapes it, which prevents active XSS. NEVER wrap .LLMSuggestions
+       or .SkillName in template.HTML() — doing so would disable escaping and
+       create a stored XSS vulnerability. */}}
   <div class="llm-notes">{{.LLMSuggestions}}</div>
   {{end}}
 </body>
@@ -174,7 +178,7 @@ func cmdReport(ctx context.Context, args []string) error {
 	}
 
 	outPath := filepath.Join(iterationPath(ws, iter), "report.html")
-	if err := os.WriteFile(outPath, out, 0o644); err != nil {
+	if err := os.WriteFile(outPath, out, 0o600); err != nil {
 		return fmt.Errorf("writing report: %w", err)
 	}
 

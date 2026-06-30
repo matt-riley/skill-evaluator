@@ -21,10 +21,13 @@ type Eval struct {
 // EvalSource records where an eval came from so failing evals can be
 // traced back to the session that produced them.
 type EvalSource struct {
-	AgitOrigin    string `json:"agit_origin,omitempty"`
-	AgitSessionID string `json:"agit_session_id,omitempty"`
-	AgitStepHash  string `json:"agit_step_hash,omitempty"`
-	Timestamp     int64  `json:"timestamp,omitempty"`
+	AgitOrigin     string `json:"agit_origin,omitempty"`
+	AgitSessionID  string `json:"agit_session_id,omitempty"`
+	AgitStepHash   string `json:"agit_step_hash,omitempty"`
+	Timestamp      int64  `json:"timestamp,omitempty"`
+	EvalHash       string `json:"eval_hash,omitempty"`
+	QualityScore   int    `json:"quality_score,omitempty"`
+	Classification string `json:"classification,omitempty"`
 }
 
 // MatcherType identifies how an assertion should be evaluated.

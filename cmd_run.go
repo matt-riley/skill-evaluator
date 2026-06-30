@@ -78,7 +78,11 @@ func cmdRun(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("cannot acquire lock on iteration %d: %w", iter, err)
 	}
-	defer releaseLock(lockFd)
+	defer func() {
+		if err := releaseLock(lockFd); err != nil {
+			logger.Warn("failed to release lock", "error", err)
+		}
+	}()
 
 	lock.UpdatedAt = time.Now()
 	if err := writeLock(ws, lock); err != nil {

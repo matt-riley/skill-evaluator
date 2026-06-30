@@ -115,7 +115,7 @@ func acquireLock(dir string) (*os.File, error) {
 		return nil, fmt.Errorf("opening dir for lock: %w", err)
 	}
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, fmt.Errorf("another process is running this iteration: %w", err)
 	}
 	return f, nil

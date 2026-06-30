@@ -112,8 +112,8 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 // readOutputContents reads all non-binary files from the output directory.
 // Enforces cumulative size and file count caps to prevent agent outputs
 // from ballooning the judge prompt.
-const maxTotalOutputSize = 500 * 1024  // 500 KB total across all files
-const maxOutputFiles = 50              // max number of files to read
+const maxTotalOutputSize = 500 * 1024 // 500 KB total across all files
+const maxOutputFiles = 50             // max number of files to read
 
 func readOutputContents(outDir string) map[string]string {
 	contents := map[string]string{}
@@ -316,10 +316,10 @@ func sanitizeAssertionText(s string) string {
 	replacements := map[string]string{
 		"IGNORE ALL PREVIOUS INSTRUCTIONS": "[INSTRUCTION STRIPPED]",
 		"IGNORE PREVIOUS INSTRUCTIONS":     "[INSTRUCTION STRIPPED]",
-		"DISREGARD PREVIOUS":              "[INSTRUCTION STRIPPED]",
-		"DISREGARD ALL":                   "[INSTRUCTION STRIPPED]",
-		"FORGET EVERYTHING":               "[INSTRUCTION STRIPPED]",
-		"SYSTEM:":                         "[SYSTEM STRIPPED]",
+		"DISREGARD PREVIOUS":               "[INSTRUCTION STRIPPED]",
+		"DISREGARD ALL":                    "[INSTRUCTION STRIPPED]",
+		"FORGET EVERYTHING":                "[INSTRUCTION STRIPPED]",
+		"SYSTEM:":                          "[SYSTEM STRIPPED]",
 	}
 	result := s
 	for pattern, replacement := range replacements {

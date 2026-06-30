@@ -71,6 +71,19 @@ func cmdRun(ctx context.Context, args []string) error {
 		}
 	}
 
+	// Acquire an exclusive advisory lock on the iteration directory
+	// to prevent concurrent runs from corrupting state.
+	iterDir := iterationPath(ws, iter)
+	lockFd, err := acquireLock(iterDir)
+	if err != nil {
+		return fmt.Errorf("cannot acquire lock on iteration %d: %w", iter, err)
+	}
+	defer func() {
+		if err := releaseLock(lockFd); err != nil {
+			logger.Warn("failed to release lock", "error", err)
+		}
+	}()
+
 	lock.UpdatedAt = time.Now()
 	if err := writeLock(ws, lock); err != nil {
 		return fmt.Errorf("writing lock: %w", err)

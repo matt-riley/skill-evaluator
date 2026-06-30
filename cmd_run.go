@@ -16,7 +16,8 @@ func cmdRun(ctx context.Context, args []string) error {
 	evalID := fs.Int("eval", -1, "Run a single eval by ID")
 	modelsRaw := fs.String("models", "", "Comma-separated agent:model pairs (e.g. pi:claude-sonnet,claude)")
 	resume := fs.Bool("resume", false, "Resume the latest running iteration")
-	timeoutFlag := fs.Duration("timeout", 0, "Max duration per agent invocation (e.g. 5m)")
+	forceUnlock := fs.Bool("force-unlock", false, "Force-unlock a stale iteration lock")
+	timeoutFlag := fs.Duration("timeout", 10*time.Minute, "Max duration per agent invocation (e.g. 5m, default: 10m)")
 	parallelFlag := fs.Int("parallel", 2, "Concurrent agent invocations")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -44,7 +45,6 @@ func cmdRun(ctx context.Context, args []string) error {
 	}
 
 	models := resolveModels(cfg, cliModels)
-	multiModel := len(cliModels) > 0 || len(cfg.Models) > 0
 
 	ws := workspacePath(skillDir)
 
@@ -55,6 +55,29 @@ func cmdRun(ctx context.Context, args []string) error {
 		iter, lock, err = findRunningIteration(ws)
 		if err != nil {
 			return fmt.Errorf("cannot resume: %w", err)
+		}
+		// Check for stale lock — warn and suggest --force-unlock
+		if isStaleLock(lock) {
+			if *forceUnlock {
+				fmt.Printf("Force-unlocking stale iteration %d (last updated %s)\n", iter, lock.UpdatedAt.Format(time.RFC3339))
+				lock.Status = "complete"
+				lock.UpdatedAt = time.Now()
+				if err := writeLock(ws, lock); err != nil {
+					return fmt.Errorf("writing unlocked lock: %w", err)
+				}
+				// Start fresh iteration
+				iter = nextIteration(ws)
+				lock = &IterationLock{
+					Iteration: iter,
+					Status:    "running",
+					Completed: []RunIdentity{},
+					StartedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}
+			} else {
+				return fmt.Errorf("iteration %d appears stale (last updated %s). Use --force-unlock to override, or --resume to continue",
+					iter, lock.UpdatedAt.Format(time.RFC3339))
+			}
 		}
 		fmt.Printf("Resuming iteration %d\n", iter)
 	} else {
@@ -116,7 +139,8 @@ func cmdRun(ctx context.Context, args []string) error {
 		configsToRun = []string{"baseline"}
 	}
 	totalRuns := evalCount * len(models) * len(configsToRun)
-	if totalRuns > 10 && multiModel && !skipsPrompts {
+	// Show cost warning for all runs (not just multi-model) to catch large single-model batches
+	if totalRuns > 10 && !skipsPrompts {
 		fmt.Printf("⚠️  This will run %d agent invocations (%d evals × %d models × %d configs).\n", totalRuns, evalCount, len(models), len(configsToRun))
 		fmt.Print("Continue? [y/N]: ")
 		var answer string

@@ -5,6 +5,23 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.3.0](https://github.com/matt-riley/skill-evaluator/compare/v1.2.0...v1.3.0) (2026-06-30)
+
+
+### Features
+
+* context propagation — ctx through CmdBuilder, per-invocation timeout, graceful cancellation ([#14](https://github.com/matt-riley/skill-evaluator/issues/14)) ([756e8b8](https://github.com/matt-riley/skill-evaluator/commit/756e8b8c44fe727c091c34a0940166dc9a21ca4a))
+* **import-agit:** integrate with agengit steps/eval, --merge, source metadata, smart filtering ([#26](https://github.com/matt-riley/skill-evaluator/issues/26)) ([164295f](https://github.com/matt-riley/skill-evaluator/commit/164295f2edc1e522e16d9db43553e272d3aceeda))
+
+
+### Bug Fixes
+
+* clear golangci-lint findings, split import_agit.go into internal/agit, fix CI ([#28](https://github.com/matt-riley/skill-evaluator/issues/28)) ([9d9e85b](https://github.com/matt-riley/skill-evaluator/commit/9d9e85bcb2b6b7ab9190ee7f59ea5ba2fd45553c))
+* collect errors in cmdRun instead of aborting; pass --model/--skill to generic agent ([#22](https://github.com/matt-riley/skill-evaluator/issues/22)) ([dc579a2](https://github.com/matt-riley/skill-evaluator/commit/dc579a2d16e362b558f81a2d454a3950c5e91d59))
+* make CmdBuilder a parameter instead of package-level var to prevent races ([#23](https://github.com/matt-riley/skill-evaluator/issues/23)) ([f6e5756](https://github.com/matt-riley/skill-evaluator/commit/f6e5756450b3f858ace7358491d85c6c4b8c7f7a)), closes [#17](https://github.com/matt-riley/skill-evaluator/issues/17)
+* remediate all 22 security vulnerabilities from audit ([4aefb54](https://github.com/matt-riley/skill-evaluator/commit/4aefb547b0d5dd488d7f3bc7d237d2ec35ab3bf2))
+* remove copilot from schema enum, use [@v2](https://github.com/v2) refs in release.yml ([#21](https://github.com/matt-riley/skill-evaluator/issues/21)) ([df7c6e0](https://github.com/matt-riley/skill-evaluator/commit/df7c6e008810a8cae0d70632fda28fe31ab9008e))
+
 ## [1.2.0](https://github.com/matt-riley/skill-evaluator/compare/v1.1.0...v1.2.0) (2026-06-27)
 
 

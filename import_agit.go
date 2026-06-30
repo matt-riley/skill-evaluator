@@ -173,9 +173,14 @@ type agitCurrent struct {
 
 // --- agit access (shell-out) ---
 
-// agitCmd is swappable in tests.
+// agitCmd is swappable in tests. Uses exec.LookPath to resolve the agit binary
+// to a fixed path, preventing PATH-based binary hijacking.
 var agitCmd = func(args ...string) ([]byte, error) {
-	return exec.Command("agit", args...).Output()
+	agitPath, err := exec.LookPath("agit")
+	if err != nil {
+		return nil, fmt.Errorf("agit not found in PATH: %w", err)
+	}
+	return exec.Command(agitPath, args...).Output()
 }
 
 func agitLogJSON(session string) (*agitLog, error) {
@@ -256,7 +261,38 @@ func decodeEnvelope[T any](raw []byte) (*T, error) {
 	return &env.Data, nil
 }
 
-// --- conversion ---
+// sanitizeFilePath strips directory traversal sequences from a file path.
+// Used to sanitize paths from untrusted agit diff output before they
+// become assertion file references.
+func sanitizeFilePath(path string) string {
+	// Strip leading traversal sequences
+	path = strings.TrimPrefix(filepath.Clean(path), "..")
+	path = strings.TrimPrefix(path, string(os.PathSeparator))
+	// Reject paths that still contain traversal after cleaning
+	if strings.Contains(filepath.Clean(path), "..") {
+		return ""
+	}
+	return strings.TrimSpace(path)
+}
+
+// sanitizeAssertionPath validates and cleans a file path for use in assertions.
+// Returns the cleaned path and true if safe, or empty string and false if unsafe.
+func sanitizeAssertionPath(path string) (string, bool) {
+	clean := filepath.Clean(path)
+	// Reject absolute paths and traversal
+	if filepath.IsAbs(clean) || strings.HasPrefix(clean, "..") {
+		return "", false
+	}
+	// Reject paths that still contain traversal segments after cleaning
+	if strings.Contains(clean, "..") {
+		return "", false
+	}
+	// Reject null bytes
+	if strings.ContainsRune(clean, 0) {
+		return "", false
+	}
+	return clean, true
+}
 
 // minPromptLen filters acknowledgement/chatter turns out of the corpus.
 // ponytail: not a classifier — a length floor. Curate further in evals.json.
@@ -457,10 +493,14 @@ func evalHashString(ae *agitEval) string {
 	return ae.EvalHash
 }
 
+// maxMessageContentLen caps per-message content length from agit JSON to
+// prevent bombastically large fields from inflating evals.json or judge prompts.
+const maxMessageContentLen = 50 * 1024 // 50 KB
+
 func firstUserMessage(msgs []agitMessage) string {
 	for _, m := range msgs {
 		if m.Role == "user" {
-			return m.Content
+			return truncateContent(m.Content)
 		}
 	}
 	return ""
@@ -469,10 +509,18 @@ func firstUserMessage(msgs []agitMessage) string {
 func lastAssistantMessage(msgs []agitMessage) string {
 	for i := len(msgs) - 1; i >= 0; i-- {
 		if msgs[i].Role == "assistant" {
-			return msgs[i].Content
+			return truncateContent(msgs[i].Content)
 		}
 	}
 	return ""
+}
+
+// truncateContent caps message content to a safe maximum length.
+func truncateContent(content string) string {
+	if len(content) > maxMessageContentLen {
+		return content[:maxMessageContentLen]
+	}
+	return content
 }
 
 // buildExpectedOutput describes the recorded ground truth so the judge can
@@ -578,7 +626,8 @@ func buildAssertionsWithSignals(diff *agitDiff, assistant string, ae *agitEval) 
 
 // buildAssertions emits deterministic assertions for genuinely new or modified
 // artifacts, plus key-term checks derived from the assistant's summary. Every
-// assertion must be checkable against produced files.
+// assertion must be checkable against produced files. Paths are sanitized to
+// strip traversal sequences from untrusted agit diff output.
 func buildAssertions(diff *agitDiff, assistant string) []string {
 	if diff == nil {
 		return nil
@@ -587,9 +636,14 @@ func buildAssertions(diff *agitDiff, assistant string) []string {
 
 	// Emit file_exists for all added files, plus assertions for modified files.
 	for _, c := range diff.Changes {
-		base := filepath.Base(c.Path)
+		// Sanitize the path from agit before using it.
+		cleanPath, safe := sanitizeAssertionPath(c.Path)
+		if !safe || strings.TrimSpace(cleanPath) == "" {
+			continue
+		}
+		base := filepath.Base(cleanPath)
 		// ponytail: skip agit/config-internal noise (dot-prefixed paths, lockfiles)
-		if strings.HasPrefix(c.Path, ".") || strings.Contains(base, ".lock") {
+		if strings.HasPrefix(cleanPath, ".") || strings.Contains(base, ".lock") {
 			continue
 		}
 		switch c.Kind {
@@ -878,14 +932,14 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 		return fmt.Errorf("%s already exists — pass --force to overwrite, --merge to append, or --out <path>", *outPath)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(*outPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(*outPath), 0o700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(evalFile, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(*outPath, data, 0o644); err != nil {
+	if err := os.WriteFile(*outPath, data, 0o600); err != nil {
 		return err
 	}
 	fmt.Printf("Wrote %d evals to %s\n", len(evalFile.Evals), *outPath)
@@ -911,8 +965,18 @@ func parseEvalFilter(raw string) map[string]bool {
 	return filter
 }
 
-// readEvalsFile reads an existing evals.json, tolerating missing file.
+// readEvalsFile reads an existing evals.json with size validation.
+// Used only for the merge path where the existing file must also pass
+// reasonable size checks.
 func readEvalsFile(path string) (*EvalFile, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	const maxMergeFileSize = 2 * 1024 * 1024 // 2 MB for merge input
+	if fi.Size() > maxMergeFileSize {
+		return nil, fmt.Errorf("%s is too large for merge: %d bytes (max %d)", path, fi.Size(), maxMergeFileSize)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

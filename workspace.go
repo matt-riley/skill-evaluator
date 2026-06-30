@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // workspacePath returns the workspace directory for a skill.
@@ -32,7 +34,7 @@ func evalPath(workspace string, iteration int, evalID int, modelKey string) stri
 
 // ensureDir creates a directory and all parents.
 func ensureDir(path string) error {
-	return os.MkdirAll(path, 0o755)
+	return os.MkdirAll(path, 0o700)
 }
 
 // nextIteration scans the workspace and returns the next iteration number.
@@ -62,6 +64,18 @@ func snapshotSkill(skillDir, workspace string, iteration int) (string, error) {
 // lockPath returns the path to an iteration's lockfile.
 func lockPath(workspace string, iter int) string {
 	return filepath.Join(iterationPath(workspace, iter), ".lock.json")
+}
+
+// lockTimeout is the maximum age of a running lock before it's considered stale.
+const lockTimeout = 1 * time.Hour
+
+// isStaleLock returns true if the lock has been "running" for longer than
+// the configured timeout, indicating the owning process has crashed.
+func isStaleLock(lock *IterationLock) bool {
+	if lock.Status != "running" {
+		return false
+	}
+	return time.Since(lock.UpdatedAt) > lockTimeout
 }
 
 // readLock reads and parses an iteration lockfile.
@@ -103,7 +117,32 @@ func writeLock(workspace string, lock *IterationLock) error {
 		_ = os.Remove(tmpPath)
 		return err
 	}
-	return os.Rename(tmpPath, path)
+	if err := os.Rename(tmpPath, path); err != nil {
+		// Cross-filesystem fallback: os.Rename fails with EXDEV across mount points.
+		// Fall back to copy + delete.
+		if linkErr, ok := err.(*os.LinkError); ok && linkErr.Err.Error() == "invalid cross-device link" {
+			src, openErr := os.Open(tmpPath)
+			if openErr != nil {
+				_ = os.Remove(tmpPath)
+				return fmt.Errorf("cross-device fallback open: %w", openErr)
+			}
+			defer src.Close()
+			dst, createErr := os.Create(path)
+			if createErr != nil {
+				return fmt.Errorf("cross-device fallback create: %w", createErr)
+			}
+			defer dst.Close()
+			if _, copyErr := io.Copy(dst, src); copyErr != nil {
+				_ = os.Remove(path)
+				return fmt.Errorf("cross-device fallback copy: %w", copyErr)
+			}
+			_ = os.Remove(tmpPath)
+			return nil
+		}
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return nil
 }
 
 // acquireLock obtains an exclusive advisory lock on the iteration directory.

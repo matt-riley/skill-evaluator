@@ -76,7 +76,7 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }
 
 // loadPreviousBenchmark walks backward from currentIter-1 and returns the first

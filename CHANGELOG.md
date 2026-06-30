@@ -5,6 +5,22 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.3.0](https://github.com/matt-riley/skill-evaluator/compare/v1.2.0...v1.3.0) (2026-06-30)
+
+
+### Features
+
+* context propagation — ctx through CmdBuilder, per-invocation timeout, graceful cancellation ([#14](https://github.com/matt-riley/skill-evaluator/issues/14)) ([2089e67](https://github.com/matt-riley/skill-evaluator/commit/2089e67ed425e6a959402fee1f1fdabe7e607398))
+* **import-agit:** integrate with agengit steps/eval, --merge, source metadata, smart filtering ([#26](https://github.com/matt-riley/skill-evaluator/issues/26)) ([ca3bf55](https://github.com/matt-riley/skill-evaluator/commit/ca3bf5559542be6e59d48c21c90f35df68fde506))
+
+
+### Bug Fixes
+
+* collect errors in cmdRun instead of aborting; pass --model/--skill to generic agent ([#22](https://github.com/matt-riley/skill-evaluator/issues/22)) ([ab608e3](https://github.com/matt-riley/skill-evaluator/commit/ab608e34852a45a8b3612a629625fda405b06df0))
+* make CmdBuilder a parameter instead of package-level var to prevent races ([#23](https://github.com/matt-riley/skill-evaluator/issues/23)) ([3f62ebe](https://github.com/matt-riley/skill-evaluator/commit/3f62ebe88d6933d3f7b66f7d9d0565da139658ec)), closes [#17](https://github.com/matt-riley/skill-evaluator/issues/17)
+* remediate all 22 security vulnerabilities from audit ([c8f6628](https://github.com/matt-riley/skill-evaluator/commit/c8f662851d20a50a2761a2c1182ed4047c225747))
+* remove copilot from schema enum, use [@v2](https://github.com/v2) refs in release.yml ([#21](https://github.com/matt-riley/skill-evaluator/issues/21)) ([678c160](https://github.com/matt-riley/skill-evaluator/commit/678c1603cea2ce992636b66b902db7a3ddb57ddc))
+
 ## [1.2.0](https://github.com/matt-riley/skill-evaluator/compare/v1.1.0...v1.2.0) (2026-06-27)
 
 

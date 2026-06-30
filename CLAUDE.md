@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 go build -o skill-eval .           # Build local binary
 go install ./...                   # Install from source
-go test ./...                      # Run tests (repo currently has no *_test.go files)
+go test ./...                      # Run all tests
 go test ./... -run '^TestName$'    # Run a single test
 go vet ./...                        # Static analysis
 gofmt -w .                          # Format all Go files
@@ -62,7 +62,7 @@ Runtime flow: `run` → `grade` → `benchmark` (or all three via `loop`).
 
 ## Testing strategy
 
-No test suite yet. When adding coverage, prefer table-driven Go tests in `*_test.go` files alongside the code they exercise. Test names should describe behavior (e.g., `TestMergeConfig`, `TestWorkspacePath`).
+Prefer table-driven Go tests in `*_test.go` files alongside the code they exercise. Test names should describe behavior (e.g., `TestMergeConfig`, `TestWorkspacePath`).
 
 ## Language and terminology
 

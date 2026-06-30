@@ -135,7 +135,8 @@ func LoadConfig(skillDir string) (*Config, error) {
 	home, err := os.UserHomeDir()
 	if err == nil {
 		globalPath := filepath.Join(home, ".config", "skill-eval", "config.yaml")
-		if data, err := os.ReadFile(globalPath); err == nil {
+		data, err := os.ReadFile(globalPath) // #nosec G304 -- globalPath is filepath.Join(home, ".config", "skill-eval", "config.yaml"), a fixed subpath under the user's home dir, not external input
+		if err == nil {
 			if err := validateConfigYAML(data, globalPath); err != nil {
 				return nil, err
 			}
@@ -150,7 +151,8 @@ func LoadConfig(skillDir string) (*Config, error) {
 	// Load skill-level overrides
 	if skillDir != "" {
 		skillCfgPath := filepath.Join(skillDir, ".skill-eval.yaml")
-		if data, err := os.ReadFile(skillCfgPath); err == nil {
+		data, err := os.ReadFile(skillCfgPath) // #nosec G304 -- skillCfgPath is filepath.Join(skillDir, ".skill-eval.yaml") where skillDir was resolved by walking up from cwd to find SKILL.md
+		if err == nil {
 			if err := validateConfigYAML(data, skillCfgPath); err != nil {
 				return nil, err
 			}

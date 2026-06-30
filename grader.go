@@ -112,8 +112,8 @@ func gradeFromOutput(ctx context.Context, cfg *Config, eval Eval, outDir, gradin
 // readOutputContents reads all non-binary files from the output directory.
 // Enforces cumulative size and file count caps to prevent agent outputs
 // from ballooning the judge prompt.
-const maxTotalOutputSize = 500 * 1024  // 500 KB total across all files
-const maxOutputFiles = 50              // max number of files to read
+const maxTotalOutputSize = 500 * 1024 // 500 KB total across all files
+const maxOutputFiles = 50             // max number of files to read
 
 func readOutputContents(outDir string) map[string]string {
 	contents := map[string]string{}
@@ -140,7 +140,7 @@ func readOutputContents(outDir string) map[string]string {
 		if fileCount >= maxOutputFiles {
 			break
 		}
-		data, err := os.ReadFile(filepath.Join(outDir, e.Name()))
+		data, err := os.ReadFile(filepath.Join(outDir, e.Name())) // #nosec G304 -- outDir is the eval's own output directory, e.Name() comes from os.ReadDir on that same directory
 		if err != nil {
 			continue
 		}
@@ -316,10 +316,10 @@ func sanitizeAssertionText(s string) string {
 	replacements := map[string]string{
 		"IGNORE ALL PREVIOUS INSTRUCTIONS": "[INSTRUCTION STRIPPED]",
 		"IGNORE PREVIOUS INSTRUCTIONS":     "[INSTRUCTION STRIPPED]",
-		"DISREGARD PREVIOUS":              "[INSTRUCTION STRIPPED]",
-		"DISREGARD ALL":                   "[INSTRUCTION STRIPPED]",
-		"FORGET EVERYTHING":               "[INSTRUCTION STRIPPED]",
-		"SYSTEM:":                         "[SYSTEM STRIPPED]",
+		"DISREGARD PREVIOUS":               "[INSTRUCTION STRIPPED]",
+		"DISREGARD ALL":                    "[INSTRUCTION STRIPPED]",
+		"FORGET EVERYTHING":                "[INSTRUCTION STRIPPED]",
+		"SYSTEM:":                          "[SYSTEM STRIPPED]",
 	}
 	result := s
 	for pattern, replacement := range replacements {

@@ -4,6 +4,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+
+	"github.com/matt-riley/skill-evaluator/internal/agit"
 )
 
 // Default to a no-op logger so tests and helpers don't panic when they log
@@ -16,4 +18,5 @@ func initLogger(verbose bool) {
 		level = slog.LevelDebug
 	}
 	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	agit.Logger = logger
 }

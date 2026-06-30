@@ -203,7 +203,7 @@ func readEvals(skillDir string) (*EvalFile, error) {
 		return nil, fmt.Errorf("evals.json is too large: %d bytes (max %d)", fi.Size(), maxEvalsFileSize)
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is filepath.Join(skillDir, "evals", "evals.json"), internal convention; already guarded above by a file-size check
 	if err != nil {
 		return nil, fmt.Errorf("reading evals.json: %w", err)
 	}
@@ -262,7 +262,7 @@ func fixEval(ctx context.Context, cfg *Config, skillDir string, eval Eval,
 	gradingPath := filepath.Join(evalDir, "with_skill", "grading.json")
 
 	// Load initial grading
-	data, err := os.ReadFile(gradingPath)
+	data, err := os.ReadFile(gradingPath) // #nosec G304 -- gradingPath built via evalPath(), internal workspace convention
 	if err != nil {
 		return nil, fmt.Errorf("reading initial grading for eval %d: %w", eval.ID, err)
 	}

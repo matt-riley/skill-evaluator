@@ -80,7 +80,7 @@ func TestConfigModelKey(t *testing.T) {
 func TestLoadConfigValidation(t *testing.T) {
 	writeConfig := func(t *testing.T, dir, content string) {
 		t.Helper()
-		if err := os.WriteFile(filepath.Join(dir, ".skill-eval.yaml"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, ".skill-eval.yaml"), []byte(content), 0o600); err != nil {
 			t.Fatalf("write config: %v", err)
 		}
 	}

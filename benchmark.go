@@ -84,7 +84,7 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 func loadPreviousBenchmark(workspace string, currentIter int) (int, *BenchmarkFile, error) {
 	for i := currentIter - 1; i >= 1; i-- {
 		path := fmt.Sprintf("%s/benchmark.json", iterationPath(workspace, i))
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) // #nosec G304 -- path built from internal workspace/iteration convention, not user input
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue

@@ -71,18 +71,18 @@ func TestParseModels(t *testing.T) {
 func TestCmdBenchmarkReadsModelKeyedPaths(t *testing.T) {
 	dir := t.TempDir()
 	skillDir := filepath.Join(dir, "skill")
-	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+	if err := os.MkdirAll(skillDir, 0o750); err != nil {
 		t.Fatalf("mkdir skill: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# skill"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# skill"), 0o600); err != nil {
 		t.Fatalf("write SKILL.md: %v", err)
 	}
 	evalsDir := filepath.Join(skillDir, "evals")
-	if err := os.MkdirAll(evalsDir, 0o755); err != nil {
+	if err := os.MkdirAll(evalsDir, 0o750); err != nil {
 		t.Fatalf("mkdir evals: %v", err)
 	}
 	evalsJSON := `{"skill_name":"test","evals":[{"id":1,"prompt":"p","expected_output":"e","assertions":["file_exists:x"]}]}`
-	if err := os.WriteFile(filepath.Join(evalsDir, "evals.json"), []byte(evalsJSON), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(evalsDir, "evals.json"), []byte(evalsJSON), 0o600); err != nil {
 		t.Fatalf("write evals.json: %v", err)
 	}
 
@@ -93,17 +93,17 @@ func TestCmdBenchmarkReadsModelKeyedPaths(t *testing.T) {
 	mk := "pi-deepseek/deepseek-v4-flash"
 	for _, config := range []string{"with_skill", "baseline"} {
 		base := filepath.Join(evalPath(ws, iter, 1, mk), config)
-		if err := os.MkdirAll(base, 0o755); err != nil {
+		if err := os.MkdirAll(base, 0o750); err != nil {
 			t.Fatalf("mkdir %s: %v", config, err)
 		}
 		gf := &GradingFile{Summary: GradingSummary{Passed: 1, Total: 1, PassRate: 1}}
 		data, _ := json.MarshalIndent(gf, "", "  ")
-		if err := os.WriteFile(filepath.Join(base, "grading.json"), data, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(base, "grading.json"), data, 0o600); err != nil {
 			t.Fatalf("write grading: %v", err)
 		}
 		td := &TimingData{DurationMs: 1000, TotalTokens: 50}
 		data, _ = json.MarshalIndent(td, "", "  ")
-		if err := os.WriteFile(filepath.Join(base, "timing.json"), data, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(base, "timing.json"), data, 0o600); err != nil {
 			t.Fatalf("write timing: %v", err)
 		}
 	}

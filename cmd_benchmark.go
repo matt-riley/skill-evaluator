@@ -59,7 +59,7 @@ func cmdBenchmark(ctx context.Context, args []string) error {
 					}
 				}
 
-				data, err := os.ReadFile(gradingPath)
+				data, err := os.ReadFile(gradingPath) // #nosec G304 -- path built internally via evalPath() from the workspace convention, not user input
 				if err != nil {
 					continue
 				}
@@ -76,7 +76,8 @@ func cmdBenchmark(ctx context.Context, args []string) error {
 				}
 
 				timingPath := filepath.Join(filepath.Dir(gradingPath), "timing.json")
-				if td, err := os.ReadFile(timingPath); err == nil {
+				td, err := os.ReadFile(timingPath) // #nosec G304 -- path built internally via filepath.Dir(gradingPath), not user input
+				if err == nil {
 					var t TimingData
 					if json.Unmarshal(td, &t) == nil {
 						rr.Timing = &t

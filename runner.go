@@ -52,7 +52,7 @@ func runEval(ctx context.Context, cfg *Config, skillDir string, eval Eval, works
 		if ctx.Err() == context.DeadlineExceeded {
 			logger.Debug("agent run timed out", "timeout", ctx.Err())
 		} else {
-			logger.Debug("agent run failed", "error", err)
+			logger.Debug("agent run failed", "error", err, "output", string(output))
 		}
 	}
 

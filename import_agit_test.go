@@ -327,7 +327,7 @@ func TestConvertStepsFromStepsJSON(t *testing.T) {
 				},
 			},
 			{
-				Hash:  "ccc",
+				Hash: "ccc",
 				Step: &agitStep{
 					Messages: []agitMessage{
 						{Role: "user", Content: "ok thanks"},

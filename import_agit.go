@@ -82,9 +82,9 @@ type agitCounts struct {
 // --- agit steps types (agit v1.26+ batch command) ---
 
 type agitSteps struct {
-	Origin    string         `json:"origin"`
-	SessionID string         `json:"session_id"`
-	Steps     []agitStepRow  `json:"steps"`
+	Origin    string        `json:"origin"`
+	SessionID string        `json:"session_id"`
+	Steps     []agitStepRow `json:"steps"`
 }
 
 type agitStepRow struct {
@@ -116,18 +116,18 @@ type agitSessionRow struct {
 // --- agit eval types ---
 
 type agitEval struct {
-	Scope              agitEvalScope    `json:"scope"`
-	EvalHash           string           `json:"eval_hash"`
-	InScopeAssessment  agitAssessment   `json:"in_scope_assessment"`
-	FollowUpAssessment agitFollowUp     `json:"follow_up_assessment"`
-	CurrentAssessment  agitCurrent      `json:"current_assessment"`
+	Scope              agitEvalScope  `json:"scope"`
+	EvalHash           string         `json:"eval_hash"`
+	InScopeAssessment  agitAssessment `json:"in_scope_assessment"`
+	FollowUpAssessment agitFollowUp   `json:"follow_up_assessment"`
+	CurrentAssessment  agitCurrent    `json:"current_assessment"`
 }
 
 type agitEvalScope struct {
-	Kind        string `json:"kind"`
-	Origin      string `json:"origin,omitempty"`
-	SessionID   string `json:"session_id,omitempty"`
-	StepCount   int64  `json:"step_count,omitempty"`
+	Kind      string `json:"kind"`
+	Origin    string `json:"origin,omitempty"`
+	SessionID string `json:"session_id,omitempty"`
+	StepCount int64  `json:"step_count,omitempty"`
 }
 
 type agitAssessment struct {
@@ -146,10 +146,10 @@ type agitDimensions struct {
 }
 
 type agitDimensionReport struct {
-	Rating     string     `json:"rating"`
-	Score      int        `json:"score"`
-	Confidence string     `json:"confidence"`
-	Reasons    []string   `json:"reasons"`
+	Rating     string      `json:"rating"`
+	Score      int         `json:"score"`
+	Confidence string      `json:"confidence"`
+	Reasons    []string    `json:"reasons"`
 	Signals    agitSignals `json:"signals"`
 }
 

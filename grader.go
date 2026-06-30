@@ -140,7 +140,7 @@ func readOutputContents(outDir string) map[string]string {
 		if fileCount >= maxOutputFiles {
 			break
 		}
-		data, err := os.ReadFile(filepath.Join(outDir, e.Name()))
+		data, err := os.ReadFile(filepath.Join(outDir, e.Name())) // #nosec G304 -- outDir is the eval's own output directory, e.Name() comes from os.ReadDir on that same directory
 		if err != nil {
 			continue
 		}

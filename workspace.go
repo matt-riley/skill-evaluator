@@ -121,17 +121,17 @@ func writeLock(workspace string, lock *IterationLock) error {
 		// Cross-filesystem fallback: os.Rename fails with EXDEV across mount points.
 		// Fall back to copy + delete.
 		if linkErr, ok := err.(*os.LinkError); ok && linkErr.Err.Error() == "invalid cross-device link" {
-			src, openErr := os.Open(tmpPath)
+			src, openErr := os.Open(tmpPath) // #nosec G304 -- tmpPath was just created by os.CreateTemp earlier in this same function
 			if openErr != nil {
 				_ = os.Remove(tmpPath)
 				return fmt.Errorf("cross-device fallback open: %w", openErr)
 			}
-			defer src.Close()
-			dst, createErr := os.Create(path)
+			defer func() { _ = src.Close() }()
+			dst, createErr := os.Create(path) // #nosec G304 -- path is lockPath(), internal convention
 			if createErr != nil {
 				return fmt.Errorf("cross-device fallback create: %w", createErr)
 			}
-			defer dst.Close()
+			defer func() { _ = dst.Close() }()
 			if _, copyErr := io.Copy(dst, src); copyErr != nil {
 				_ = os.Remove(path)
 				return fmt.Errorf("cross-device fallback copy: %w", copyErr)
@@ -149,7 +149,7 @@ func writeLock(workspace string, lock *IterationLock) error {
 // Returns the file descriptor that must be closed to release the lock.
 // Fails immediately if another process holds the lock (LOCK_NB).
 func acquireLock(dir string) (*os.File, error) {
-	f, err := os.OpenFile(dir, os.O_RDONLY, 0)
+	f, err := os.OpenFile(dir, os.O_RDONLY, 0) // #nosec G304 -- dir is iterationPath(), internal convention, used to flock the iteration directory
 	if err != nil {
 		return nil, fmt.Errorf("opening dir for lock: %w", err)
 	}

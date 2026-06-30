@@ -101,15 +101,15 @@ func TestFindRunningIteration(t *testing.T) {
 func TestGradeBlocksIncompleteLock(t *testing.T) {
 	tmp := t.TempDir()
 	skillDir := filepath.Join(tmp, "skill")
-	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+	if err := os.MkdirAll(skillDir, 0o750); err != nil {
 		t.Fatalf("mkdir skill: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Skill\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Skill\n"), 0o600); err != nil {
 		t.Fatalf("write SKILL.md: %v", err)
 	}
 
 	evalsPath := filepath.Join(skillDir, "evals", "evals.json")
-	if err := os.MkdirAll(filepath.Dir(evalsPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(evalsPath), 0o750); err != nil {
 		t.Fatalf("mkdir evals: %v", err)
 	}
 	ef := EvalFile{
@@ -119,7 +119,7 @@ func TestGradeBlocksIncompleteLock(t *testing.T) {
 		},
 	}
 	data, _ := json.MarshalIndent(ef, "", "  ")
-	if err := os.WriteFile(evalsPath, data, 0o644); err != nil {
+	if err := os.WriteFile(evalsPath, data, 0o600); err != nil {
 		t.Fatalf("write evals.json: %v", err)
 	}
 

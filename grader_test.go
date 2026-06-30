@@ -139,7 +139,7 @@ func TestMatcherFileExists(t *testing.T) {
 	tmp := t.TempDir()
 	contents := map[string]string{}
 
-	_ = os.WriteFile(filepath.Join(tmp, "results.csv"), []byte("ok"), 0o644)
+	_ = os.WriteFile(filepath.Join(tmp, "results.csv"), []byte("ok"), 0o600)
 
 	got := evaluateMatcher(parseAssertion("file_exists: results.csv"), tmp, contents)
 	if !got.Passed || got.Evidence != "file results.csv exists" {
@@ -196,8 +196,8 @@ func TestGradeMixedMatchers(t *testing.T) {
 	tmp := t.TempDir()
 	outDir := filepath.Join(tmp, "outputs")
 	gradingPath := filepath.Join(tmp, "grading.json")
-	_ = os.MkdirAll(outDir, 0o755)
-	_ = os.WriteFile(filepath.Join(outDir, "results.csv"), []byte("ok"), 0o644)
+	_ = os.MkdirAll(outDir, 0o750)
+	_ = os.WriteFile(filepath.Join(outDir, "results.csv"), []byte("ok"), 0o600)
 
 	mockCmd := CmdBuilder(func(ctx context.Context, agent, model, task, skillPath string) *exec.Cmd {
 		return exec.Command("echo", `{"assertion_results": [{"text": "The output is useful", "passed": true, "evidence": "looks good"}]}`)

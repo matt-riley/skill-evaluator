@@ -13,24 +13,24 @@ import (
 func TestCmdReportGeneratesHTML(t *testing.T) {
 	dir := t.TempDir()
 	skillDir := filepath.Join(dir, "skill")
-	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+	if err := os.MkdirAll(skillDir, 0o750); err != nil {
 		t.Fatalf("mkdir skill: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# skill"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# skill"), 0o600); err != nil {
 		t.Fatalf("write SKILL.md: %v", err)
 	}
 	evalsDir := filepath.Join(skillDir, "evals")
-	if err := os.MkdirAll(evalsDir, 0o755); err != nil {
+	if err := os.MkdirAll(evalsDir, 0o750); err != nil {
 		t.Fatalf("mkdir evals: %v", err)
 	}
 	evalsJSON := `{"skill_name":"test-skill","evals":[{"id":1,"prompt":"p","expected_output":"e","assertions":["file_exists:x"]}]}`
-	if err := os.WriteFile(filepath.Join(evalsDir, "evals.json"), []byte(evalsJSON), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(evalsDir, "evals.json"), []byte(evalsJSON), 0o600); err != nil {
 		t.Fatalf("write evals.json: %v", err)
 	}
 
 	ws := workspacePath(skillDir)
 	iter := 1
-	if err := os.MkdirAll(iterationPath(ws, iter), 0o755); err != nil {
+	if err := os.MkdirAll(iterationPath(ws, iter), 0o750); err != nil {
 		t.Fatalf("mkdir iteration: %v", err)
 	}
 
@@ -54,7 +54,7 @@ func TestCmdReportGeneratesHTML(t *testing.T) {
 		IterationDelta:    nil,
 	}
 	data, _ := json.MarshalIndent(bf, "", "  ")
-	if err := os.WriteFile(filepath.Join(iterationPath(ws, iter), "benchmark.json"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(iterationPath(ws, iter), "benchmark.json"), data, 0o600); err != nil {
 		t.Fatalf("write benchmark: %v", err)
 	}
 
@@ -65,7 +65,7 @@ func TestCmdReportGeneratesHTML(t *testing.T) {
 	}
 
 	reportPath := filepath.Join(iterationPath(ws, iter), "report.html")
-	report, err := os.ReadFile(reportPath)
+	report, err := os.ReadFile(reportPath) // #nosec G304 -- reportPath is a test-local temp path, not external input
 	if err != nil {
 		t.Fatalf("read report.html: %v", err)
 	}

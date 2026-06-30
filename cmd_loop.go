@@ -118,7 +118,7 @@ func runFixPhase(ctx context.Context, modelsRaw string, maxAttempts int) error {
 		for _, m := range models {
 			mk := m.Key()
 			gradingPath := filepath.Join(evalPath(ws, iter, eval.ID, mk), "with_skill", "grading.json")
-			data, err := os.ReadFile(gradingPath)
+			data, err := os.ReadFile(gradingPath) // #nosec G304 -- gradingPath built via evalPath(), internal workspace convention
 			if err != nil {
 				fmt.Printf("  eval %d/%s: no grading, skipping\n", eval.ID, mk)
 				continue

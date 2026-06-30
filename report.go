@@ -189,7 +189,7 @@ func cmdReport(ctx context.Context, args []string) error {
 // loadBenchmarkFile reads a benchmark.json file for a specific iteration.
 func loadBenchmarkFile(workspace string, iter int) (*BenchmarkFile, error) {
 	path := filepath.Join(iterationPath(workspace, iter), "benchmark.json")
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path built via iterationPath(), internal workspace convention
 	if err != nil {
 		return nil, err
 	}

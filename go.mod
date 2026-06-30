@@ -1,6 +1,6 @@
 module github.com/matt-riley/skill-evaluator
 
-go 1.26.4
+go 1.25.0
 
 require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2

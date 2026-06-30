@@ -261,14 +261,14 @@ func TestRunSummaryAggregate(t *testing.T) {
 func mustWriteBenchmark(t *testing.T, dir string, iter int, bf *BenchmarkFile) {
 	t.Helper()
 	path := iterationPath(dir, iter)
-	if err := os.MkdirAll(path, 0o755); err != nil {
+	if err := os.MkdirAll(path, 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	data, err := json.MarshalIndent(bf, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := os.WriteFile(fmt.Sprintf("%s/benchmark.json", path), data, 0o644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/benchmark.json", path), data, 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 }

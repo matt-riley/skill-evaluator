@@ -6,7 +6,7 @@
 > report — do not improvise. When done, update the status row for this plan
 > in `plans/README.md`.
 >
-> **Drift check (run first)**: `git diff --stat 1325f07..HEAD -- main.go benchmark.go eval.go report.go`
+> **Drift check (run first)**: `git diff --stat 1325f07..HEAD -- main.go benchmark.go eval.go report.go config.go schema/config-schema.json`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.
@@ -96,6 +96,40 @@ hardening all exist so that a CI gate can be *trusted*.
 6. **No `--json` retrofit on other commands in this plan** except
    `validate --json` (trivial: the `Finding` list; Plan 009 flagged it as
    follow-up). Benchmark already emits a file; report is human-facing.
+7. **Thresholds live in `.skill-eval.yaml` too — the versioned quality
+   bar.** A `gate:` block in the config (validated by the schema like
+   everything else) holds the same five thresholds as the flags:
+
+   ```yaml
+   gate:
+     min_delta: 0
+     max_fail_runs: 0
+     # min_pass_rate: 0.8
+   ```
+
+   Precedence: CLI flag > config value > check not run. A bare
+   `skill-eval gate` with a populated config block runs the configured
+   checks; bare with *no* config block keeps the exit-2 "no checks
+   requested" behavior. Why this matters beyond convenience: the config
+   is the repo owner's standards, versioned next to the skill — every
+   human *and every agent* that clones the repo inherits the same
+   definition of "done". For agent-driven loops this is the whole
+   contract: "iterate until `skill-eval gate` exits 0" is a complete,
+   personality-free stopping condition, and agents have no intrinsic
+   threshold of their own — the config supplies it. Use pointer fields
+   (`*float64`/`*int`) so absence is distinguishable from zero (a zero
+   `min_delta` is meaningful: "must not be worse").
+8. **The checks are regression-shaped by design — keep them that way.**
+   Deltas, regressions, and failure counts are Goodhart-resistant:
+   gaming them requires actually improving the skill. Absolute pass rate
+   is not — an optimizer (human or agent) told to reach 100% can get
+   there by overfitting the skill to the eval suite or softening
+   assertions, and per the tool's own philosophy a suite that sits at
+   100% has stopped teaching you anything (always-passing assertions are
+   dead weight; healthy suites get harder over time). `--min-pass-rate`
+   stays available as a floor, but the docs (Step 6) must carry the
+   guardrail explicitly, and no default, example, or error message in
+   this plan should nudge toward pass-rate perfection.
 
 ## Commands you will need
 
@@ -113,7 +147,8 @@ hardening all exist so that a CI gate can be *trusted*.
 - New `cmd_gate.go` + `cmd_gate_test.go`
 - `main.go` (dispatch, usage, `exitCodeError` handling)
 - `cmd_validate.go` (`--json` flag emitting findings)
-- New `docs/guides/ci.md` (stable-fields contract + GitHub Actions example)
+- `config.go` + `schema/config-schema.json` (the `gate:` thresholds block)
+- New `docs/guides/ci.md` (stable-fields contract + GitHub Actions example + the Goodhart guardrail)
 
 **Out of scope**:
 - Do NOT run evals from the gate.
@@ -121,8 +156,9 @@ hardening all exist so that a CI gate can be *trusted*.
   surface; wrappers belong in CI config, and the guide shows how.
 - Do NOT gate on activation metrics or process quality in v1 (add checks
   when Plans 013/015 land — the check list is designed to grow).
-- Do NOT introduce a config-file home for thresholds yet (flags only;
-  thresholds-in-`.skill-eval.yaml` is a follow-up once shapes settle).
+- Do NOT weight, colorize, or editorialize failure data in any JSON
+  output — the data layer stays neutral; urgency is expressed as
+  explicit thresholds and exit codes, never as tone in the record.
 
 ## Git workflow
 
@@ -180,8 +216,9 @@ func cmdGate(ctx context.Context, args []string) error
   use `flag.String` + parse, or track with `fs.Visit` — pick one, test it.
 - Load `benchmark.json` via the existing loader (`loadBenchmarkFile`,
   `report.go:190-202` — it is exactly this: workspace + iter → file).
-- Evaluate only requested checks; no flags at all → exit 2 with
-  "no checks requested".
+- Evaluate only requested checks; no flags AND no config `gate:` block
+  (Step 5) → exit 2 with "no checks requested — pass flags or add a
+  gate: block to .skill-eval.yaml".
 - Human output: one line per check
   (`PASS min_pass_rate: 0.85 >= 0.80`), summary line, then return
   `&exitCodeError{code: 1, msg: "gate failed"}` on violation, nil on pass.
@@ -214,17 +251,65 @@ and suppresses the human lines; exit contract unchanged.
 
 **Verify**: `TestValidateJSON`.
 
-### Step 5: Wire-up, docs, final checks
+### Step 5: Thresholds in `.skill-eval.yaml`
+
+Per Design decision 7:
+
+- `config.go`: add to `Config`:
+
+```go
+// GateConfig is the repo's versioned quality bar; nil fields mean
+// "check not configured". Zero values are meaningful (min_delta: 0 =
+// "must not be worse"), hence pointers.
+type GateConfig struct {
+	MinPassRate   *float64 `yaml:"min_pass_rate"`
+	MinDelta      *float64 `yaml:"min_delta"`
+	MaxFailRuns   *int     `yaml:"max_fail_runs"`
+	MaxTokenDelta *float64 `yaml:"max_token_delta"`
+	MaxTimeDelta  *float64 `yaml:"max_time_delta"`
+}
+```
+
+  with `Gate GateConfig \`yaml:"gate"\`` on `Config` and non-nil copy in
+  `mergeConfig` (global config may set an org-wide bar; skill config
+  overrides per field).
+- `schema/config-schema.json`: add the `gate` object with the five
+  numeric properties (bounds: min_pass_rate 0..1, max_fail_runs ≥ 0).
+- `cmd_gate.go`: resolution order per check = CLI flag if set, else
+  config field if non-nil, else check not run. The verdict's `checks`
+  entries gain `"source": "flag" | "config"` so CI logs show where the
+  bar came from.
+
+**Verify**: `go test ./... -run 'TestGateConfigThresholds|TestGateFlagOverridesConfig|TestMergeConfigGate'`
+— config-only run executes configured checks; a flag overrides the same
+check's config value; per-field merge (global sets min_delta, skill sets
+max_fail_runs → both active); invalid bounds rejected by schema
+validation.
+
+### Step 6: Wire-up, docs, final checks
 
 - `main.go`: `case "gate":` + usage lines.
 - `docs/guides/ci.md`:
   - the stable-fields contract table;
   - exit-code table (0/1/2);
+  - the `gate:` config block with the flag-precedence rule, framed as
+    "your repo's versioned quality bar — every human and agent that
+    clones the skill inherits it", including the agent-loop contract
+    sentence: *for agent-driven iteration, "improve the skill until
+    `skill-eval gate` exits 0" is a complete stopping condition*;
+  - **the guardrail, verbatim or close to it**: *set your bar on
+    regressions and deltas, not on reaching 100% — a suite you can
+    saturate is a suite that's stopped teaching you anything. Prefer
+    `min_delta`/`max_fail_runs`; treat a climbing pass rate as a
+    prompt to add harder evals, and be wary of optimizing (or asking an
+    agent to optimize) `min_pass_rate` toward 1.0 — that incentivizes
+    overfitting the skill to the eval suite and softening assertions
+    rather than genuine improvement*;
   - a complete GitHub Actions example:
 
 ```yaml
 - run: skill-eval loop -y --baseline previous --runs 3
-- run: skill-eval gate --min-delta 0 --max-fail-runs 0 --json
+- run: skill-eval gate --json   # thresholds come from .skill-eval.yaml's gate: block
 ```
 
   with the note that agent/judge credentials are the workflow's problem
@@ -244,16 +329,21 @@ go test ./...
 - `TestGateExitCodes` (0/1/2 paths).
 - `TestGatePerModel` (worst-model semantics).
 - `TestGateAgainst` (+corpus guard both ways).
-- `TestGateJSONSchema` (golden verdict document; field names locked).
+- `TestGateJSONSchema` (golden verdict document; field names locked, incl. `source`).
 - `TestValidateJSON`.
 - `TestGateNoBenchmark` (fresh workspace → exit 2, actionable message).
+- `TestGateConfigThresholds` / `TestGateFlagOverridesConfig` /
+  `TestMergeConfigGate` (Step 5; per-field precedence and merge).
+- `TestGateNoChecksAnywhere` (no flags, no config block → exit 2 naming both options).
 
 ## Done criteria
 
 - [ ] `skill-eval gate` evaluates any combination of the five threshold checks against an iteration's benchmark and exits 0/1/2 per the contract.
+- [ ] Thresholds are configurable via the `gate:` block in `.skill-eval.yaml` (schema-validated, per-field merge, flags override); verdict entries record their `source`.
+- [ ] A bare `skill-eval gate` runs the repo's configured bar; with neither flags nor config it exits 2 naming both options.
 - [ ] `--against` compares iterations with the corpus-hash guard.
-- [ ] `--json` verdicts and `validate --json` findings have locked schemas (`*-v1`).
-- [ ] `docs/guides/ci.md` documents stable fields, exit codes, and a working Actions example.
+- [ ] `--json` verdicts and `validate --json` findings have locked schemas (`*-v1`); no JSON output editorializes failure.
+- [ ] `docs/guides/ci.md` documents stable fields, exit codes, the config block with the agent-loop contract sentence, the regressions-not-perfection guardrail, and a working Actions example.
 - [ ] `go test ./...`, `go vet ./...`, `golangci-lint run` pass.
 - [ ] `plans/README.md` row updated to DONE.
 
@@ -276,5 +366,10 @@ Stop and report if:
   they stabilize — the gate is the tool's public contract for "what
   quality means".
 - Keep `gateVerdict` flat and boring; CI parsers live forever.
-- Follow-up: thresholds block in `.skill-eval.yaml` so repos can version
-  their quality bar next to the skill.
+- Guard the regression-shaped philosophy in review: any future check,
+  example, or default that pushes toward absolute pass-rate perfection
+  should be challenged with Design decision 8 — Goodhart-resistant
+  checks (deltas, regressions, failure counts) are the gate's identity.
+- The `gate:` config block is the natural home for future axes' thresholds
+  (activation precision, process-quality deltas) — extend the block and
+  the schema together, one release after the axis stabilizes.

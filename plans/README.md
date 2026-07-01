@@ -47,6 +47,7 @@ and update your row when done.
 | 030 | Example skill + zero-to-benchmark tutorial + learning path | P3 | M-L | 025, 026 | TODO |
 | 031 | Fail fast on missing/invalid agent runtimes (preflight; kill `exec false` trap) | P2 | S | — | TODO |
 | 032 | Honest token accounting — provenance labels, exclude unknowns from stats | P2 | S-M | 018 (soft) | TODO |
+| 033 | Assertion ledger — identity, cross-iteration history, flips, retirement | P2 | M | 016, 017 (soft) | TODO |
 
 ## Dependency notes
 
@@ -95,6 +96,11 @@ Cycle 5 (031–032, from the codebase-quality review):
 - **031 and 032 both touch the `AgentRunner` interface** (`BinaryName()` in 031, `ExtractTokens()` in 032) — land in numeric order, or settle the interface shape once if reviewed together.
 - **032 after 018 (soft)** — both move the same `aggregateRuns`/`TimingData` lines; both fields are additive, but whoever lands second rebases.
 - **029 ↔ 031 interlock**: 029 documents the missing-agent trap as it exists; 031 fixes it and changes the symptom. Whichever lands second updates the troubleshooting entry — both plans say so.
+
+Cycle 6 (033, from the assertion-centrism discussion):
+
+- **033 is the longitudinal complement to 016's buckets** (per-iteration classification → cross-iteration history). Land 016 first, or align the bucket vocabulary deliberately — 033 carries a STOP condition on it.
+- **033's flip-attribution feature needs 017's snapshots** to show "what changed in the skill when this assertion flipped"; without them it degrades gracefully. Read-only over existing artifacts — it works retroactively on historical workspaces the day it ships.
 
 ## Findings considered and deferred (cycle 5)
 

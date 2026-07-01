@@ -26,10 +26,11 @@
 Grading is output-based: the judge sees produced files. But a skill's value
 is often in the *process* — fewer repeated failures, more verification,
 less churn — and two runs with identical outputs can differ wildly in cost
-and flail. skill-evaluator already shells out to the same agent CLIs
-(claude, pi, codex, gemini, copilot) that agengit hooks into; **if agit
-hooks are installed, every eval run is itself recorded as an agit
-session.** Running `agit eval` on those fresh sessions and attaching the
+and flail. skill-eval shells out to agent CLIs (`pi`, `claude`, `codex` —
+the current allowlist in `agent.go:43-47`), and agengit installs hooks
+into all three (its hook support also covers gemini and copilot, which
+skill-eval does not run today); **if agit hooks are installed, every eval
+run is itself recorded as an agit session.** Running `agit eval` on those fresh sessions and attaching the
 six quality dimensions to each `RunResult` gives the benchmark a second
 axis: "did the skill make the agent *work better*, not just produce passing
 output?" A skill that yields the same pass rate with a 30-point churn-risk
@@ -140,8 +141,9 @@ With agit installed and hooks active for at least one agent:
    do they forward the agent's environment? Is any env var recorded onto
    the session/step?
 2. `agit sessions --json` — confirm `UpdatedAt` granularity and origin
-   naming per agent runtime (map agit origin strings to our agent names:
-   `claude`, `codex`, `pi`, `gemini`, `copilot`).
+   naming per agent runtime (map agit origin strings to the agents
+   skill-eval can run: `pi`, `claude`, `codex`; agit origins with no
+   skill-eval runner, e.g. gemini/copilot, are ignored by the correlator).
 3. Trigger one manual agent invocation and confirm the session appears and
    is attributable.
 

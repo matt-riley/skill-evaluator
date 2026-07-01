@@ -6,7 +6,7 @@
 > report — do not improvise. When done, update the status row for this plan
 > in `plans/README.md`.
 >
-> **Drift check (run first)**: `git diff --stat 1325f07..HEAD -- docs/guides/ *.md docs/site/src/utils/routing.ts main.go cmd_run.go cmd_grade.go cmd_loop.go cmd_import_agit.go report.go`
+> **Drift check (run first)**: `git diff --stat 1325f07..HEAD -- docs/guides/ eval-workflow.md commands.md configuration.md workspace.md quick-start.md docs/site/src/utils/routing.ts main.go cmd_run.go cmd_grade.go cmd_loop.go cmd_import_agit.go report.go`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.

@@ -287,6 +287,11 @@ Stop and report if:
 - The prompt is now layered: task → expected → tagged outputs → assertions
   → contract. Any future prompt edit must keep instructions *outside* and
   *after* the data envelopes.
+- Perspective on `sanitizeAssertionText` (`grader.go:312-332`): the
+  phrase-blocklist is weak on its own (trivially paraphrased) — after this
+  plan, the structural envelopes and canaries are the real defense. Keep
+  the blocklist as cheap depth, but never cite it as the mitigation in
+  docs or reviews.
 - Plan 021 (grading cache) must fold canary config and `samples` into its
   cache key, and must never cache `JudgeSuspect: true` gradings.
 - If canary hit rates in real use are meaningfully nonzero, that is

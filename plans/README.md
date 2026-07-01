@@ -45,6 +45,8 @@ and update your row when done.
 | 028 | Concepts & how-it-works pages (glossary + pipeline internals) | P2 | M | — | TODO |
 | 029 | Troubleshooting & FAQ (symptom-indexed failure modes) | P2 | S-M | — | TODO |
 | 030 | Example skill + zero-to-benchmark tutorial + learning path | P3 | M-L | 025, 026 | TODO |
+| 031 | Fail fast on missing/invalid agent runtimes (preflight; kill `exec false` trap) | P2 | S | — | TODO |
+| 032 | Honest token accounting — provenance labels, exclude unknowns from stats | P2 | S-M | 018 (soft) | TODO |
 
 ## Dependency notes
 
@@ -87,6 +89,18 @@ Cycle 4 (025–030, documentation):
 - **028 and 029 are independent** but read better after 026 (they link into corrected pages and must document only shipped behavior — both carry check-the-plan-status instructions).
 - **Docs plans track code plans**: several entries change wording depending on whether 007 (files semantics), 011 (stddev caveats), 017 (baseline semantics), or 020 (lint errors) have landed. Every affected step says "check `plans/README.md` status first" — keep this table current or the docs will drift the day they're written.
 - **Tone contract for all of cycle 4**: keep the playful emoji voice, but every claim must sit within one screen of a concrete artifact (real JSON, real command output, provenance-commented). "Show, then tell."
+
+Cycle 5 (031–032, from the codebase-quality review):
+
+- **031 and 032 both touch the `AgentRunner` interface** (`BinaryName()` in 031, `ExtractTokens()` in 032) — land in numeric order, or settle the interface shape once if reviewed together.
+- **032 after 018 (soft)** — both move the same `aggregateRuns`/`TimingData` lines; both fields are additive, but whoever lands second rebases.
+- **029 ↔ 031 interlock**: 029 documents the missing-agent trap as it exists; 031 fixes it and changes the symptom. Whichever lands second updates the troubleshooting entry — both plans say so.
+
+## Findings considered and deferred (cycle 5)
+
+- **Split `package main` into internal packages** (grader/runner/benchmark/workspace): the root package is straining at ~6k lines and the `internal/agit` split was the right instinct — but ~20 pending plans pin file paths and line-anchored drift checks to the current layout. Restructuring now would invalidate most of the backlog. **Deliberately deferred until the plan backlog substantially drains**; when picked up, it should be a mechanical move-only change with no behavior edits, done in one PR.
+- **Token → dollar cost conversion**: pricing tables rot; parked as a 032 follow-up behind a user-supplied price table.
+- **`skill-eval doctor`**: parked as a 031 follow-up (preflight + config validation + agit presence in one diagnostic).
 
 ## Findings considered and rejected
 

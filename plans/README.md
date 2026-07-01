@@ -7,6 +7,10 @@ generated on 2026-07-01 from a gap/flaw review of the tool's own approach
 (two confirmed bugs: 017, 018). Plans 025–030 were generated on 2026-07-01
 from a documentation-site review (one confirmed docs-integrity failure:
 the `feedback.json` guide documents an unimplemented feature — 026/027).
+Plans 031–032 were generated on 2026-07-01 from a codebase-quality review
+(runtime preflight, token-accounting honesty), and plan 033 on 2026-07-01
+from the assertion-centrism design discussion (assertions as the unit of
+meaning deserve identity and history).
 Execute in the order below unless dependencies say otherwise. Each
 executor: read the plan fully before starting, honor its STOP conditions,
 and update your row when done.

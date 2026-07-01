@@ -80,6 +80,9 @@ Writing evals by hand is great, but what if you could just do the work and let `
 skill-eval import-agit                 # Imports your most recent session
 skill-eval import-agit --session 1234  # Imports a specific session
 skill-eval import-agit --force         # Overwrite existing evals!
+skill-eval import-agit --merge          # Append to existing evals.json
+skill-eval import-agit --all-sessions  # Import every recorded session
+skill-eval import-agit --all-sessions --eval-filter good  # Only quality sessions
 ```
 
 This is perfect for kickstarting a brand new eval suite. Check out the [Importing Sessions guide](guides/importing-agit-sessions.md) for the full breakdown!

@@ -5,7 +5,7 @@ description: Where the agit import stands today, what agengit capabilities are s
 
 # Research: Deepening the agengit integration
 
-Date: 2026-07-01. Researched against skill-evaluator v1.4.0 and agengit v1.26.0.
+Date: 2026-07-01. Researched against skill-eval v1.4.0 and agengit v1.26.0.
 
 ## Goal
 

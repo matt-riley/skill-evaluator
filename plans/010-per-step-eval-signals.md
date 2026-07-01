@@ -26,7 +26,7 @@
 `agit eval` scores sessions on six dimensions, and agit ≥1.26 can break
 that down per step (`--include-steps` → `step_assessments`, keyed by step
 hash, each carrying the 10 signal counters — see agengit
-`docs/format/eval-v1.md`). skill-evaluator fetches only the session-level
+`docs/format/eval-v1.md`). skill-eval fetches only the session-level
 report, so **one classification is stamped onto every eval imported from a
 session**. Real sessions are mixed: a "mixed" session usually contains
 clean turns worth importing and churny turns worth skipping. Today
@@ -268,7 +268,7 @@ agit must see no behavior change.
 - [ ] `FetchEvalReport` requests `--include-steps` and degrades gracefully on older agit.
 - [ ] `import-agit --strict-steps` filters individual steps by their own signals; default behavior unchanged.
 - [ ] Imported evals record per-step signal provenance in `EvalSource`.
-- [ ] Thresholds documented in the guide as skill-evaluator policy.
+- [ ] Thresholds documented in the guide as skill-eval policy.
 - [ ] `go test ./...`, `go vet ./...`, `golangci-lint run` pass.
 - [ ] `plans/README.md` row updated to DONE.
 

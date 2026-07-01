@@ -41,7 +41,7 @@ and update your row when done.
 | 024 | Skill-dir integrity guard and always-hermetic runs | P2 | S-M | 007 (Part B) | TODO |
 | 025 | Evals & assertions masterclass (rewrite + assertion cookbook) | P1 | M | — | TODO |
 | 026 | Docs truth reconciliation (fictional features, schemas, flag reference) | P1 | M | — | TODO |
-| 027 | Implement `feedback.json` — make the documented feedback loop real | P1 | S-M | — | TODO |
+| 027 | Implement the feedback lifecycle — note → judge/fix/report → assertion | P1 | M | — | TODO |
 | 028 | Concepts & how-it-works pages (glossary + pipeline internals) | P2 | M | — | TODO |
 | 029 | Troubleshooting & FAQ (symptom-indexed failure modes) | P2 | S-M | — | TODO |
 | 030 | Example skill + zero-to-benchmark tutorial + learning path | P3 | M-L | 025, 026 | TODO |
@@ -81,6 +81,7 @@ Cycle 3 (017–024):
 Cycle 4 (025–030, documentation):
 
 - **026 and 027 resolve the same lie from two sides**: `giving-feedback.md` documents an unimplemented `feedback.json`. 027 implements the feature (preferred fix); 026 quarantines the guide with an honest banner if 027 hasn't landed yet. Whichever lands second reconciles the guide — both plans carry instructions for either ordering, but landing **027 before or with 026** avoids the banner entirely.
+- **027 goes beyond what the docs promised** — full lifecycle: scaffold → judge context (both configs, identically — fairness invariant) → fix critique → report debt view → judge-assisted promotion of notes into assertions (`skill-eval feedback --promote --write`). Promotion overlaps Plan 016's authoring validator — whichever lands second reuses the first's helper.
 - **025 owns `writing-evals.md`; 026 owns every other page.** The one factual error inside writing-evals (`--baseline previous` misused as "run without skill") is fixed in 025 to avoid double edits. Don't let both plans touch the same file.
 - **030 depends on 025 and 026 (hard)** — the tutorial reuses 025's running example corpus and must teach 026's corrected semantics; it is the capstone, do it last.
 - **028 and 029 are independent** but read better after 026 (they link into corrected pages and must document only shipped behavior — both carry check-the-plan-status instructions).

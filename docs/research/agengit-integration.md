@@ -9,7 +9,7 @@ Date: 2026-07-01. Researched against skill-evaluator v1.4.0 and agengit v1.26.0.
 
 ## Goal
 
-skill-evaluator's purpose is to help write top-quality skills (per the
+skill-eval's purpose is to help write top-quality skills (per the
 [Agent Skills spec](https://agentskills.io/specification)) by making the
 eval loop cheap and honest. agengit records real agent sessions; those
 sessions are the best available source of *realistic* evals. This document

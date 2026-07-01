@@ -1,4 +1,4 @@
-# Plan 031: Fail fast on missing or invalid agent runtimes — kill the `exec.Command("false")` trap
+# Plan 031: Fail fast on missing or invalid agent runtimes — kill the `exec.CommandContext(ctx, "false")` trap
 
 > **Executor instructions**: Follow this plan step by step. Run every
 > verification command and confirm the expected result before moving to the

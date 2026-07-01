@@ -44,7 +44,7 @@ execution time — this list is the page's skeleton):
 | `(no output files found)` in grading; everything fails | Agent answered in chat instead of writing files; prompt's `Save outputs to:` line ignored, or agent lacks file-write ability in non-interactive mode (`buildPrompt`, `runner.go:250`; `readOutputContents`, `grader.go:118-155`) |
 | `judge error: ...` evidence on every LLM assertion | Judge invocation failed; fail-closed by design (`grader.go:64-73`) |
 | `parsing grading output ... no JSON found` | Judge replied with prose/markdown; first-`{` extraction found nothing (`parseGradingOutput`, `grader.go:335-347`) |
-| Every run instantly `failed` | Agent binary not installed / not in allowlist — `buildAgentCmd` swaps in `exec.Command("false")` with only a Warn log (`runner.go:98-108`) — a genuinely cryptic one |
+| Every run instantly `failed` | Agent binary not installed / not in allowlist — `buildAgentCmd` swaps in `exec.CommandContext(ctx, "false")` with only a Warn log (`runner.go:98-108`) — a genuinely cryptic one |
 | `iteration N is still running` from grade | Lock status running; finish with `run --resume` (`cmd_grade.go:49-69`) |
 | `iteration N appears stale` | >1h-old running lock; `--force-unlock` (`cmd_run.go:59-80`, `workspace.go:69-79`) |
 | `another process is running this iteration` | flock held — second concurrent run (`workspace.go:148-161`) |
@@ -83,7 +83,7 @@ new files automatically.
 2. **Verbatim error strings are sacred** — copy each from source at
    execution time (they are the page's search keys and Ctrl-F targets);
    provenance-comment each per Plan 026's convention.
-3. **The `exec.Command("false")` trap gets special treatment** (top-3
+3. **The `exec.CommandContext(ctx, "false")` trap gets special treatment** (top-3
    placement): the symptom is maximally confusing (instant failure, no
    error mentioning the agent) and the fix is trivial (install the CLI /
    check `defaults.agent`). Also file a one-line improvement note in the

@@ -83,6 +83,8 @@ skill-eval import-agit --force         # Overwrite existing evals!
 skill-eval import-agit --merge          # Append to existing evals.json
 skill-eval import-agit --all-sessions  # Import every recorded session
 skill-eval import-agit --all-sessions --eval-filter good  # Only quality sessions
+skill-eval import-agit --all-sessions --origin pi  # Only sessions from pi
+skill-eval import-agit --dry-run       # Preview without writing
 ```
 
 This is perfect for kickstarting a brand new eval suite. Check out the [Importing Sessions guide](guides/importing-agit-sessions.md) for the full breakdown!

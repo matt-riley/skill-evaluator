@@ -44,6 +44,8 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 	merge := fs.Bool("merge", false, "Merge into existing evals.json instead of overwriting")
 	allSessions := fs.Bool("all-sessions", false, "Import all recorded agit sessions")
 	evalFilterRaw := fs.String("eval-filter", "", "Filter sessions by agit eval classification (good,mixed,bad,unknown)")
+	originFilter := fs.String("origin", "", "Filter sessions by agent origin (e.g. pi, claude, codex)")
+	dryRun := fs.Bool("dry-run", false, "Preview imported evals without writing evals.json")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -81,12 +83,23 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 			return fmt.Errorf("no sessions recorded — record some agent activity first")
 		}
 		for _, s := range sessions.Sessions {
+			if *originFilter != "" && s.Origin != *originFilter {
+				continue
+			}
 			targets = append(targets, sessionTarget{
 				origin:    s.Origin,
 				sessionID: s.SessionID,
 			})
 		}
-		fmt.Printf("Found %d session(s)\n", len(targets))
+		filtered := len(targets)
+		if *originFilter != "" && filtered == 0 {
+			return fmt.Errorf("no sessions found for origin %q", *originFilter)
+		}
+		if *originFilter != "" {
+			fmt.Printf("Found %d session(s) (origin: %s)\n", filtered, *originFilter)
+		} else {
+			fmt.Printf("Found %d session(s)\n", filtered)
+		}
 	} else {
 		targets = append(targets, sessionTarget{origin: "", sessionID: *session})
 	}
@@ -194,6 +207,29 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 			agit.MinPromptLen)
 	}
 
+	// Dry-run: print a preview and exit without writing.
+	if *dryRun {
+		fmt.Printf("\n--- Dry Run Preview (%d evals) ---\n", len(allEvals))
+		for _, e := range allEvals {
+			quality := ""
+			if e.Source != nil {
+				if e.Source.Classification != "" {
+					quality = fmt.Sprintf(" [%s", e.Source.Classification)
+					if e.Source.QualityScore > 0 {
+						quality += fmt.Sprintf(" q:%d", e.Source.QualityScore)
+					}
+					quality += "]"
+				}
+			}
+			fmt.Printf("  %d. %s%s\n", e.ID, truncatePrompt(e.Prompt, 80), quality)
+			if e.Source != nil && e.Source.AgitOrigin != "" {
+				fmt.Printf("     origin: %s, session: %s\n", e.Source.AgitOrigin, e.Source.AgitSessionID)
+			}
+		}
+		fmt.Printf("\n(dry run — no file written. Use without --dry-run to write evals.json)\n")
+		return nil
+	}
+
 	evalFile := EvalFile{
 		SkillName: filepath.Base(dir),
 		Evals:     allEvals,
@@ -229,8 +265,28 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 	if err := os.WriteFile(*outPath, data, 0o600); err != nil {
 		return err
 	}
-	fmt.Printf("Wrote %d evals to %s\n", len(evalFile.Evals), *outPath)
+
+	// Summarise quality if available.
+	var withQuality int
+	for _, e := range evalFile.Evals {
+		if e.Source != nil && e.Source.Classification != "" {
+			withQuality++
+		}
+	}
+	if withQuality > 0 {
+		fmt.Printf("Wrote %d evals to %s (%d with quality metadata)\n", len(evalFile.Evals), *outPath, withQuality)
+	} else {
+		fmt.Printf("Wrote %d evals to %s\n", len(evalFile.Evals), *outPath)
+	}
 	return nil
+}
+
+// truncatePrompt shortens a prompt for preview output.
+func truncatePrompt(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
 }
 
 // readEvalsFile reads an existing evals.json with size validation.

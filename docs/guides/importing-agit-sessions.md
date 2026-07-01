@@ -64,6 +64,26 @@ skill-eval import-agit --all-sessions --merge
 
 This iterates over every recorded `agit` session, imports each one, and writes a single combined `evals.json`. Combine with `--merge` to layer them on top of existing evals.
 
+### Filtering by Origin
+
+If you record sessions from multiple agents (pi, claude, codex), use `--origin` to import only sessions from a specific agent:
+
+```bash
+skill-eval import-agit --all-sessions --origin pi
+```
+
+This is useful when you want evals that reflect how a specific agent interacts with your skill.
+
+### Preview with `--dry-run`
+
+Not sure what you'll get? Use `--dry-run` to preview the evals that would be imported without writing anything:
+
+```bash
+skill-eval import-agit --all-sessions --dry-run
+```
+
+This prints a summary of each eval's prompt, origin, session, quality classification, and quality score so you can see exactly what would land in `evals.json` before committing to it.
+
 ### Filtering by Quality Classification
 
 `agit eval` classifies sessions as `good`, `mixed`, `bad`, or `unknown` based on evidence quality signals. Use `--eval-filter` to import only sessions matching a classification:

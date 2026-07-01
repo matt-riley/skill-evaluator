@@ -70,6 +70,9 @@ Usage:
                                       Generate an HTML report from benchmark.json
   skill-eval loop                     Full cycle: run → grade → benchmark
   skill-eval import-agit              Convert recorded agit sessions into evals/evals.json
+  skill-eval import-agit --all-sessions  Import every recorded session
+  skill-eval import-agit --origin pi      Filter sessions by agent origin
+  skill-eval import-agit --dry-run        Preview imports without writing
 
 Flags:
   --verbose, -v               Enable structured debug logging to stderr

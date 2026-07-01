@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -176,6 +177,28 @@ func TestVerboseFlagParsed(t *testing.T) {
 			}
 			if verbose != tt.wantVerbose {
 				t.Errorf("verbose = %v, want %v", verbose, tt.wantVerbose)
+			}
+		})
+	}
+}
+
+func TestTruncatePrompt(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"short passthrough", "hello", 80, "hello"},
+		{"exact length", "exactly" + strings.Repeat("x", 73), 80, "exactly" + strings.Repeat("x", 73)},
+		{"truncation", strings.Repeat("a", 100), 10, "aaaaaaaaaa…"},
+		{"empty string", "", 80, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncatePrompt(tt.in, tt.n)
+			if got != tt.want {
+				t.Errorf("truncatePrompt(len=%d, n=%d) = %q, want %q", len(tt.in), tt.n, got, tt.want)
 			}
 		})
 	}

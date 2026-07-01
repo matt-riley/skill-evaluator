@@ -173,7 +173,7 @@ confirmed (names must match the actual wire format — do not guess):
 type Change struct {
 	Kind string `json:"kind"` // "added" | "modified" | "deleted"
 	Path string `json:"path"`
-	// Blob fields per docs/format/steps-v1.md — confirm exact JSON keys in Step 1.
+	// Blob fields per the agengit repo's docs/format/steps-v1.md — confirm exact JSON keys in Step 1.
 	Blob     string `json:"blob,omitempty"`
 	BlobSize int64  `json:"blob_size,omitempty"`
 }

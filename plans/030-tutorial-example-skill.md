@@ -105,7 +105,7 @@ order or level.
 
 | Purpose | Command | Expected on success |
 |---------|---------|---------------------|
-| Example loads | `go test ./... -run TestExampleSkill` | exit 0 |
+| Example loads | `go test ./... -run TestExampleSkillLoads` | exit 0 |
 | Authoring run | `cd examples/jest-migration && skill-eval loop -y` | real artifacts for the tutorial |
 | Site build | `cd docs/site && pnpm build && pnpm test` | exit 0 |
 | Spec check (if landed) | `skill-eval validate --skill examples/jest-migration` | exit 0 |
@@ -162,7 +162,7 @@ returns a non-LLM type (catches prefix typos in our own example —
 eating the Plan 020 dogfood). Add the test to CI implicitly via
 `go test ./...` (confirm ci.yml runs it; no new job needed if so).
 
-**Verify**: `go test ./... -run TestExampleSkill` green; deliberately
+**Verify**: `go test ./... -run TestExampleSkillLoads` green; deliberately
 break a fixture path locally → test fails naming it → revert.
 
 ### Step 3: The authoring run

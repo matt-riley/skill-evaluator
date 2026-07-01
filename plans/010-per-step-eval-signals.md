@@ -25,8 +25,9 @@
 
 `agit eval` scores sessions on six dimensions, and agit ≥1.26 can break
 that down per step (`--include-steps` → `step_assessments`, keyed by step
-hash, each carrying the 10 signal counters — see agengit
-`docs/format/eval-v1.md`). skill-eval fetches only the session-level
+hash, each carrying the 10 signal counters — see `docs/format/eval-v1.md`
+in the external agengit repo, github.com/matt-riley/agengit; that
+directory does not exist in this repo). skill-eval fetches only the session-level
 report, so **one classification is stamped onto every eval imported from a
 session**. Real sessions are mixed: a "mixed" session usually contains
 clean turns worth importing and churny turns worth skipping. Today

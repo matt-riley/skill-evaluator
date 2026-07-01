@@ -68,7 +68,7 @@ Cycle 2 (007–016):
 - **011 before 015 if both are scheduled** — 015 writes per-run artifacts and adopts 011's `run-<r>/` layout via `runConfigPath`; landing 015 first means reworking its paths later.
 - **012 before 016 is soft** — 016's authoring prompt offers transcript matchers only if 012's prefixes exist (it feature-detects), so either order works but 012-first gives authored assertions more to work with.
 - **007 + 014 interact**: bundle imports only carry fixture blobs if 007's restoration reads them through the shared conversion path; 014 adds a test for this once both are in.
-- **Probe-first plans (007, 010, 014, 015)** each start with an agit interface probe and carry STOP conditions if the installed agit differs from the `docs/format/*.md` specs (written against agengit v1.26.0). Re-verify probes if agit has been upgraded since 2026-07-01.
+- **Probe-first plans (007, 010, 014, 015)** each start with an agit interface probe and carry STOP conditions if the installed agit differs from the format specs in the **external agengit repo** (`docs/format/*.md` at github.com/matt-riley/agengit — not a directory in this repo; see the Sources section of `docs/research/agengit-integration.md`). Written against agengit v1.26.0; re-verify probes if agit has been upgraded since 2026-07-01.
 
 Cycle 3 (017–024):
 

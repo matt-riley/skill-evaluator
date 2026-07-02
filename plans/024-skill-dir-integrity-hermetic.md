@@ -70,12 +70,20 @@ letting users run *all* evals hermetically.
    `BenchmarkFile.SkillDirty bool` + report banner "the skill changed
    during this iteration — results are unreliable". Detection must not
    fail the run: measurement validity is the user's call.
-2. **Tree hash**: walk the skill dir (skip `evals/` **workspace is outside
-   the skill dir already**; skip nothing else; follow the same walk rules
-   as `snapshotSkill`'s `os.CopyFS` view), sha256 of each file, then
-   sha256 over sorted `path\x00hash` lines. Symlinks: hash the link target
-   path string, do not follow (agents creating symlink loops must not hang
-   the hasher).
+2. **Tree hash**: walk the **entire** skill dir — including `evals/`.
+   The eval corpus and fixtures are part of the measurement instrument:
+   an agent (or user) mutating `evals.json` or a fixture mid-iteration
+   invalidates results exactly as much as editing SKILL.md, and Plan
+   018's corpus hash is computed at benchmark time so it cannot catch a
+   mid-run edit on its own. Skip nothing (the workspace lives *outside*
+   the skill dir by convention, so run artifacts never pollute the hash;
+   follow the same walk rules as `snapshotSkill`'s `os.CopyFS` view).
+   sha256 of each file, then sha256 over sorted `path\x00hash` lines.
+   Symlinks: hash the link target path string, do not follow (agents
+   creating symlink loops must not hang the hasher). When the diff shows
+   only `evals/` paths changed, the warning should say so distinctly —
+   "the eval corpus changed mid-iteration" is a different (and equally
+   serious) diagnosis than "the skill changed".
 3. **Part B — hermetic mode for everything**: config
    `defaults.hermetic: true` or flag `--hermetic` extends Plan 007's rule
    from "when eval has Files" to "always": every run gets

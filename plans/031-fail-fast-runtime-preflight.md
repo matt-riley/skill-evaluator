@@ -113,12 +113,15 @@ var buildAgentCmd CmdBuilder = func(ctx context.Context, agent, model, task, ski
 3. **Make the fallback loud and honest.** The `buildAgentCmd` fallback
    becomes unreachable in normal flow but stays as defense-in-depth —
    change it to print to **stderr** unconditionally (not just
-   `logger.Warn`) and return a command that fails with the actual reason:
-   `exec.CommandContext(ctx, "sh", "-c", "echo 'skill-eval: <err>' >&2; exit 1")`
-   is tempting but shells out; simpler and portable: keep `false` for the
-   exit code but emit the error via `fmt.Fprintf(os.Stderr, ...)` before
-   returning. Same treatment for the `validateModel` warn: upgrade to
-   stderr.
+   `logger.Warn`) before returning a failing command. On the command
+   itself: `exec.CommandContext(ctx, "sh", "-c", ...)` shells out, and
+   the current `false` relies on a POSIX binary that does not exist on
+   Windows. The genuinely portable failing command is a deliberately
+   **nonexistent binary name**:
+   `exec.CommandContext(ctx, "skill-eval-invalid-agent-see-stderr")` —
+   `Start` fails on every platform with "executable file not found", and
+   the name itself points at the stderr explanation. Same treatment for
+   the `validateModel` warn: upgrade to stderr.
 4. **`--dry-run` synergy**: if Plan 020 landed, its dry-run output calls
    the same preflight and reports per-agent status (`agent pi: ok
    (/usr/local/bin/pi)`) — one function, two consumers.

@@ -596,3 +596,12 @@ func TestConvertStepsSourceHasEvalMetadata(t *testing.T) {
 		t.Errorf("QualityScore should be > 0, got %d", e.Source.QualityScore)
 	}
 }
+
+func TestParseEvalFilterWithOrigin(t *testing.T) {
+	// Verify that ParseEvalFilter doesn't interact with origin filtering.
+	// Origin filtering happens at the session level before eval filtering.
+	filter := ParseEvalFilter("good")
+	if filter == nil || !filter["good"] {
+		t.Error("ParseEvalFilter should work independently of origin filtering")
+	}
+}

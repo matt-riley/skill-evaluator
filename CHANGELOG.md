@@ -5,6 +5,13 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 
 # Changelog
 
+## [1.5.0](https://github.com/matt-riley/skill-evaluator/compare/v1.4.0...v1.5.0) (2026-07-02)
+
+
+### Features
+
+* **import-agit:** add --origin filter, --dry-run preview, quality metadata in output ([#31](https://github.com/matt-riley/skill-evaluator/issues/31)) ([1bbc7cf](https://github.com/matt-riley/skill-evaluator/commit/1bbc7cf246ab251f5aed1732ed8287717437ad01))
+
 ## [1.4.0](https://github.com/matt-riley/skill-evaluator/compare/v1.3.0...v1.4.0) (2026-07-01)
 
 

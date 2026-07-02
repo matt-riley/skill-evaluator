@@ -282,11 +282,14 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 }
 
 // truncatePrompt shortens a prompt for preview output.
+// It operates on runes, not bytes, to avoid splitting multi-byte
+// UTF-8 characters (common in real agent prompts with emoji/Unicode).
 func truncatePrompt(s string, n int) string {
-	if len(s) <= n {
+	r := []rune(s)
+	if len(r) <= n {
 		return s
 	}
-	return s[:n] + "…"
+	return string(r[:n]) + "…"
 }
 
 // readEvalsFile reads an existing evals.json with size validation.

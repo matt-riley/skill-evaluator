@@ -193,6 +193,8 @@ func TestTruncatePrompt(t *testing.T) {
 		{"exact length", "exactly" + strings.Repeat("x", 73), 80, "exactly" + strings.Repeat("x", 73)},
 		{"truncation", strings.Repeat("a", 100), 10, "aaaaaaaaaa…"},
 		{"empty string", "", 80, ""},
+		{"multibyte truncation at rune boundary", "Héllo Wörld 日本語 🎉", 5, "Héllo…"},
+		{"multibyte exact length", "日本語", 3, "日本語"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

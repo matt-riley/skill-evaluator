@@ -155,7 +155,7 @@ func TestIterationDeltaSingleModel(t *testing.T) {
 		{Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.9}}, Timing: &TimingData{DurationMs: 2000, TotalTokens: 110}},
 		{Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}, Timing: &TimingData{DurationMs: 1500, TotalTokens: 80}},
 	}
-	if err := computeBenchmark(current, dir, 2); err != nil {
+	if err := computeBenchmark(current, dir, 2, nil); err != nil {
 		t.Fatalf("computeBenchmark failed: %v", err)
 	}
 
@@ -180,7 +180,7 @@ func TestIterationDeltaNoPrevious(t *testing.T) {
 		{Config: "with_skill", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.8}}, Timing: &TimingData{DurationMs: 1000, TotalTokens: 100}},
 		{Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.5}}, Timing: &TimingData{DurationMs: 800, TotalTokens: 70}},
 	}
-	if err := computeBenchmark(current, dir, 1); err != nil {
+	if err := computeBenchmark(current, dir, 1, nil); err != nil {
 		t.Fatalf("computeBenchmark failed: %v", err)
 	}
 
@@ -203,7 +203,7 @@ func TestBestWorstModelRanking(t *testing.T) {
 		{Model: "B", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.1}}},
 	}
 	dir := t.TempDir()
-	if err := computeBenchmark(results, dir, 1); err != nil {
+	if err := computeBenchmark(results, dir, 1, nil); err != nil {
 		t.Fatalf("computeBenchmark: %v", err)
 	}
 	bf := mustReadBenchmark(t, dir, 1)
@@ -222,7 +222,7 @@ func TestBestWorstModelSingleModelUnset(t *testing.T) {
 		{Model: "", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.6}}},
 	}
 	dir := t.TempDir()
-	if err := computeBenchmark(results, dir, 1); err != nil {
+	if err := computeBenchmark(results, dir, 1, nil); err != nil {
 		t.Fatalf("computeBenchmark: %v", err)
 	}
 	bf := mustReadBenchmark(t, dir, 1)
@@ -240,7 +240,7 @@ func TestRunSummaryAggregate(t *testing.T) {
 		{Model: "B", Config: "baseline", Grading: &GradingFile{Summary: GradingSummary{PassRate: 0.4}}, Timing: &TimingData{DurationMs: 1800, TotalTokens: 250}},
 	}
 	dir := t.TempDir()
-	if err := computeBenchmark(results, dir, 1); err != nil {
+	if err := computeBenchmark(results, dir, 1, nil); err != nil {
 		t.Fatalf("computeBenchmark: %v", err)
 	}
 	bf := mustReadBenchmark(t, dir, 1)

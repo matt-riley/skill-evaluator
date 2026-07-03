@@ -31,7 +31,7 @@ and update your row when done.
 | 010 | Use `agit eval --include-steps` for per-step quality filtering | P2 | S | — | TODO |
 | 011 | Add `--runs N` repetitions for statistically honest benchmarks | P2 | M | — | TODO |
 | 012 | Persist run transcripts; mine tool calls into process assertions | P2 | M | — | TODO |
-| 013 | Activation evals — test skill discovery, not just execution | P2 | M | 009 | TODO |
+| 013 | Activation evals — test skill discovery, not just execution | P2 | M | 009 | DONE |
 | 014 | New import sources: `--between` git ranges and `--bundle` archives | P3 | S | 008 | TODO |
 | 015 | Process-quality benchmarking via `agit eval` on the eval runs | P3 | M-L | — | TODO |
 | 016 | LLM-assisted assertion authoring and skill-value report buckets | P3 | M | — | TODO |

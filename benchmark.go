@@ -9,7 +9,9 @@ import (
 )
 
 // computeBenchmark aggregates run results into a benchmark.json.
-func computeBenchmark(results []*RunResult, workspace string, iteration int) error {
+// activations is an optional slice of activation-eval verdicts; when
+// non-empty, the benchmark includes an ActivationSummary.
+func computeBenchmark(results []*RunResult, workspace string, iteration int, activations []ActivationResult) error {
 	// Group results by model
 	byModel := map[string][]*RunResult{}
 	for _, r := range results {
@@ -66,6 +68,10 @@ func computeBenchmark(results []*RunResult, workspace string, iteration int) err
 			averageDelta(modelDeltas(bf.Models)),
 			averageDelta(modelDeltas(prev.allModels())),
 		)
+	}
+
+	if len(activations) > 0 {
+		bf.Activation = summarizeActivation(activations)
 	}
 
 	if err := ensureDir(iterationPath(workspace, iteration)); err != nil {
@@ -244,4 +250,32 @@ func computeDelta(withSkill, baseline RunSummary) Delta {
 		TimeSeconds: withSkill.TimeSeconds.Mean - baseline.TimeSeconds.Mean,
 		Tokens:      withSkill.Tokens.Mean - baseline.Tokens.Mean,
 	}
+}
+
+// summarizeActivation computes precision/recall/accuracy over activation
+// verdicts. Division by zero is guarded — reports 0 with counts visible.
+func summarizeActivation(results []ActivationResult) *ActivationSummary {
+	s := &ActivationSummary{Total: len(results)}
+	for _, r := range results {
+		switch {
+		case r.Expected && r.WouldActivate:
+			s.TP++
+		case !r.Expected && r.WouldActivate:
+			s.FP++
+		case r.Expected && !r.WouldActivate:
+			s.FN++
+		case !r.Expected && !r.WouldActivate:
+			s.TN++
+		}
+	}
+	if s.TP+s.FP > 0 {
+		s.Precision = float64(s.TP) / float64(s.TP+s.FP)
+	}
+	if s.TP+s.FN > 0 {
+		s.Recall = float64(s.TP) / float64(s.TP+s.FN)
+	}
+	if s.Total > 0 {
+		s.Accuracy = float64(s.TP+s.TN) / float64(s.Total)
+	}
+	return s
 }

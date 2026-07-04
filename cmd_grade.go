@@ -117,9 +117,75 @@ func cmdGrade(ctx context.Context, args []string) error {
 	}
 
 	if *doBenchmark {
-		return computeBenchmark(results, ws, iter)
+		return computeBenchmark(results, ws, iter, gradeActivations(ctx, cfg, ef, skillDir, ws, iter, *evalID))
 	}
 	return nil
+}
+
+// gradeActivations judges all activation evals and returns their results.
+// Reads the skill's frontmatter (name/description) once via parseSkillMD.
+// On parse error, prints a warning pointing to `skill-eval validate` and
+// returns nil (no activation results — task evals still benchmark fine).
+func gradeActivations(ctx context.Context, cfg *Config, ef *EvalFile, skillDir, ws string, iter int, evalID int) []ActivationResult {
+	var activationEvals []Eval
+	for _, eval := range ef.Evals {
+		if !eval.isActivation() {
+			continue
+		}
+		if evalID >= 0 && eval.ID != evalID {
+			continue
+		}
+		activationEvals = append(activationEvals, eval)
+	}
+	if len(activationEvals) == 0 {
+		return nil
+	}
+
+	// Read frontmatter once.
+	skillMDPath := filepath.Join(skillDir, "SKILL.md")
+	data, err := os.ReadFile(skillMDPath) // #nosec G304 -- skillDir from detectSkillDir(), SKILL.md is the conventional path
+	if err != nil {
+		fmt.Printf("  activation: cannot read SKILL.md: %v — run 'skill-eval validate' to check\n", err)
+		return nil
+	}
+	_, sf, _, err := parseSkillMD(data)
+	if err != nil {
+		fmt.Printf("  activation: SKILL.md parse error: %v — run 'skill-eval validate'\n", err)
+		return nil
+	}
+	if sf.Name == "" || sf.Description == "" {
+		fmt.Printf("  activation: SKILL.md missing name or description — run 'skill-eval validate'\n")
+		return nil
+	}
+
+	var activations []ActivationResult
+	for _, eval := range activationEvals {
+		fmt.Printf("  eval %d activation... ", eval.ID)
+		ar, err := judgeActivation(ctx, cfg, sf.Name, sf.Description, eval, nil)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+			continue
+		}
+
+		verdictStr := "no"
+		if ar.WouldActivate {
+			verdictStr = "yes"
+		}
+		expectedStr := "yes"
+		if !ar.Expected {
+			expectedStr = "no"
+		}
+		fmt.Printf("would_activate=%s (expected %s)\n", verdictStr, expectedStr)
+
+		// Write activation.json — model-independent, no config subdir.
+		actPath := filepath.Join(evalPath(ws, iter, eval.ID, ""), "activation.json")
+		if err := saveActivation(actPath, ar); err != nil {
+			fmt.Printf("  warning: could not save activation.json: %v\n", err)
+		}
+
+		activations = append(activations, *ar)
+	}
+	return activations
 }
 
 // --- benchmark ---

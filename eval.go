@@ -16,6 +16,23 @@ type Eval struct {
 	Files          []string    `json:"files,omitempty"`
 	Assertions     []string    `json:"assertions,omitempty"`
 	Source         *EvalSource `json:"source,omitempty"`
+
+	// Type is "task" (default, empty) or "activation".
+	// Activation evals test skill discovery (does the description trigger
+	// for this prompt?) rather than execution quality.
+	Type string `json:"type,omitempty"`
+
+	// ShouldActivate is the expected discovery verdict for activation
+	// evals. Nil defaults to true (a positive case).
+	ShouldActivate *bool `json:"should_activate,omitempty"`
+}
+
+// isActivation reports whether an eval tests discovery rather than execution.
+func (e Eval) isActivation() bool { return e.Type == "activation" }
+
+// expectedActivation returns the expected verdict, defaulting to true.
+func (e Eval) expectedActivation() bool {
+	return e.ShouldActivate == nil || *e.ShouldActivate
 }
 
 // EvalSource records where an eval came from so failing evals can be
@@ -165,4 +182,28 @@ type BenchmarkFile struct {
 	// New fields
 	PreviousIteration int    `json:"previous_iteration,omitempty"`
 	IterationDelta    *Delta `json:"iteration_delta,omitempty"`
+
+	// Activation holds the skill-discovery metrics (precision/recall)
+	// when activation evals were graded in this iteration.
+	Activation *ActivationSummary `json:"activation,omitempty"`
+}
+
+// ActivationResult is the judged discovery verdict for one activation eval.
+type ActivationResult struct {
+	EvalID        int    `json:"eval_id"`
+	Expected      bool   `json:"expected"`
+	WouldActivate bool   `json:"would_activate"`
+	Reason        string `json:"reason"`
+}
+
+// ActivationSummary aggregates activation verdicts for a benchmark.
+type ActivationSummary struct {
+	Total     int     `json:"total"`
+	TP        int     `json:"tp"` // expected=true,  verdict=yes
+	FP        int     `json:"fp"` // expected=false, verdict=yes
+	FN        int     `json:"fn"` // expected=true,  verdict=no
+	TN        int     `json:"tn"` // expected=false, verdict=no
+	Precision float64 `json:"precision"`
+	Recall    float64 `json:"recall"`
+	Accuracy  float64 `json:"accuracy"`
 }

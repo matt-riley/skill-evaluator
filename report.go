@@ -24,6 +24,12 @@ type ReportData struct {
 	WorstModel        string
 	Suggestions       []string
 	LLMSuggestions    string
+	Activation        *ActivationSummary
+	// ActivationFPIDs and ActivationFNIDs list the eval IDs that were
+	// misrouted (false positives and false negatives) so the author
+	// can fix the description.
+	ActivationFPIDs []int
+	ActivationFNIDs []int
 }
 
 const reportTemplate = `<!doctype html>
@@ -102,6 +108,35 @@ const reportTemplate = `<!doctype html>
 
   <p><small>Raw data: <code>benchmark.json</code> in the same iteration directory.</small></p>
 
+  {{if .Activation}}
+  <h2>Activation Metrics</h2>
+  <p class="neutral">Skill discovery quality — does the description trigger for the right tasks?</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Total activation evals</td><td>{{.Activation.Total}}</td></tr>
+      <tr><td>Precision (TP/(TP+FP))</td><td>{{printf "%.1f%%" (percent .Activation.Precision)}}</td></tr>
+      <tr><td>Recall (TP/(TP+FN))</td><td>{{printf "%.1f%%" (percent .Activation.Recall)}}</td></tr>
+      <tr><td>Accuracy</td><td>{{printf "%.1f%%" (percent .Activation.Accuracy)}}</td></tr>
+      <tr><td>True Positives</td><td>{{.Activation.TP}}</td></tr>
+      <tr><td>False Positives</td><td class="bad">{{.Activation.FP}}</td></tr>
+      <tr><td>False Negatives</td><td class="bad">{{.Activation.FN}}</td></tr>
+      <tr><td>True Negatives</td><td>{{.Activation.TN}}</td></tr>
+    </tbody>
+  </table>
+  {{if .ActivationFPIDs}}
+  <p class="bad">False positives (eval IDs: {{range $i, $id := .ActivationFPIDs}}{{if $i}}, {{end}}{{$id}}{{end}}) — the description triggers on tasks that don't need this skill. Tighten the description.</p>
+  {{end}}
+  {{if .ActivationFNIDs}}
+  <p class="bad">False negatives (eval IDs: {{range $i, $id := .ActivationFNIDs}}{{if $i}}, {{end}}{{$id}}{{end}}) — the skill should activate but doesn't. Broaden the description or add trigger phrases.</p>
+  {{end}}
+  {{end}}
+
   {{if .LLMSuggestions}}
   <h2>LLM Coach Notes</h2>
   {{/* SECURITY: LLMSuggestions comes from untrusted LLM output. html/template
@@ -160,8 +195,34 @@ func cmdReport(ctx context.Context, args []string) error {
 		Models:            bf.Models,
 		BestModel:         bf.BestModel,
 		WorstModel:        bf.WorstModel,
+		Activation:        bf.Activation,
 	}
 	data.Suggestions = buildSuggestions(data)
+
+	// Load activation result files to populate FP/FN eval IDs for the report.
+	if data.Activation != nil {
+		ws := workspacePath(skillDir)
+		for _, eval := range ef.Evals {
+			if !eval.isActivation() {
+				continue
+			}
+			actPath := filepath.Join(evalPath(ws, iter, eval.ID, ""), "activation.json")
+			ad, err := os.ReadFile(actPath) // #nosec G304 -- path built internally via evalPath()
+			if err != nil {
+				continue
+			}
+			var ar ActivationResult
+			if err := json.Unmarshal(ad, &ar); err != nil {
+				continue
+			}
+			if !ar.Expected && ar.WouldActivate {
+				data.ActivationFPIDs = append(data.ActivationFPIDs, ar.EvalID)
+			}
+			if ar.Expected && !ar.WouldActivate {
+				data.ActivationFNIDs = append(data.ActivationFNIDs, ar.EvalID)
+			}
+		}
+	}
 
 	if *llmFlag {
 		notes, err := llmCoachNotes(context.Background(), cfg, data, bf, nil)

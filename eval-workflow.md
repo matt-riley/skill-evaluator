@@ -125,3 +125,25 @@ skill-eval loop --baseline previous
 ```
 
 This creates an `iteration-2/` directory. Keep iterating until you're thrilled with the results and your feedback is completely empty!
+
+---
+
+## Activation evals 🎯
+
+So far, every eval in this workflow tests **execution** — "does the agent
+produce good output when given the skill path?" But there's a second axis:
+**does the skill's description trigger for the right tasks in the first
+place?**
+
+Activation evals test skill **discovery**, not execution. They ask the judge:
+"given only this skill's name and description, would an agent load it for
+this task?" This catches skills with perfect bodies that never activate, and
+skills with over-broad descriptions that pollute context.
+
+Run phase skips them (no agent invocation needed); grade phase judges them.
+The benchmark reports activation precision, recall, and accuracy alongside
+the usual pass rates.
+
+➡️ **See [Activation Evals](docs/guides/activation-evals.md) for the full
+guide, including how to import positives from agit sessions and create
+negatives from adjacent repos.**

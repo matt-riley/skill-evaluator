@@ -89,5 +89,24 @@ func cmdBenchmark(ctx context.Context, args []string) error {
 		}
 	}
 
-	return computeBenchmark(results, ws, iter)
+	// Load persisted activation results so re-benchmarking works
+	// without re-grading.
+	var activations []ActivationResult
+	for _, eval := range ef.Evals {
+		if !eval.isActivation() {
+			continue
+		}
+		actPath := filepath.Join(evalPath(ws, iter, eval.ID, ""), "activation.json")
+		data, err := os.ReadFile(actPath) // #nosec G304 -- path built internally via evalPath()
+		if err != nil {
+			continue
+		}
+		var ar ActivationResult
+		if err := json.Unmarshal(data, &ar); err != nil {
+			continue
+		}
+		activations = append(activations, ar)
+	}
+
+	return computeBenchmark(results, ws, iter, activations)
 }

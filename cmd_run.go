@@ -128,11 +128,19 @@ func cmdRun(ctx context.Context, args []string) error {
 
 	// Count total runs for cost warning
 	evalCount := 0
+	activationCount := 0
 	for _, eval := range ef.Evals {
 		if *evalID >= 0 && eval.ID != *evalID {
 			continue
 		}
+		if eval.isActivation() {
+			activationCount++
+			continue
+		}
 		evalCount++
+	}
+	if activationCount > 0 {
+		fmt.Printf("%d activation eval(s) will be judged during grade\n", activationCount)
 	}
 	configsToRun := []string{"with_skill", "baseline"}
 	if *baselineOnly {
@@ -171,6 +179,11 @@ func cmdRun(ctx context.Context, args []string) error {
 	var hadFailure bool
 	for _, eval := range ef.Evals {
 		if *evalID >= 0 && eval.ID != *evalID {
+			continue
+		}
+		// Activation evals are judged during grade, not run — they
+		// have no agent invocation and no lockfile identity.
+		if eval.isActivation() {
 			continue
 		}
 		// Bail early if the context has been cancelled (e.g. Ctrl+C)

@@ -16,13 +16,13 @@ import (
 // and conversion logic itself lives in internal/agit.
 
 // evalFromConverted maps an agit.ConvertedEval (decoupled from package main)
-// onto this package's own Eval/EvalSource schema.
-func evalFromConverted(ce agit.ConvertedEval) Eval {
-	return Eval{
-		ID:             ce.ID,
-		Prompt:         ce.Prompt,
-		ExpectedOutput: ce.ExpectedOutput,
-		Assertions:     ce.Assertions,
+// onto this package's own Eval/EvalSource schema. When asActivation is true,
+// the eval is tagged as an activation eval (Type="activation") with no
+// assertions or expected output — it tests discovery, not execution.
+func evalFromConverted(ce agit.ConvertedEval, asActivation bool) Eval {
+	e := Eval{
+		ID:     ce.ID,
+		Prompt: ce.Prompt,
 		Source: &EvalSource{
 			AgitOrigin:     ce.Source.Origin,
 			AgitSessionID:  ce.Source.SessionID,
@@ -33,6 +33,15 @@ func evalFromConverted(ce agit.ConvertedEval) Eval {
 			Classification: ce.Source.Classification,
 		},
 	}
+	if asActivation {
+		e.Type = "activation"
+		// ShouldActivate defaults to nil (positive case).
+		// No ExpectedOutput or Assertions — activation evals test discovery.
+		return e
+	}
+	e.ExpectedOutput = ce.ExpectedOutput
+	e.Assertions = ce.Assertions
+	return e
 }
 
 func cmdImportAgit(ctx context.Context, args []string) error {
@@ -43,6 +52,7 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 	force := fs.Bool("force", false, "Overwrite an existing evals.json")
 	merge := fs.Bool("merge", false, "Merge into existing evals.json instead of overwriting")
 	allSessions := fs.Bool("all-sessions", false, "Import all recorded agit sessions")
+	asActivation := fs.Bool("as-activation", false, "Import prompts as activation evals (positives) instead of task evals")
 	evalFilterRaw := fs.String("eval-filter", "", "Filter sessions by agit eval classification (good,mixed,bad,unknown)")
 	originFilter := fs.String("origin", "", "Filter sessions by agent origin (e.g. pi, claude, codex)")
 	dryRun := fs.Bool("dry-run", false, "Preview imported evals without writing evals.json")
@@ -125,7 +135,7 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 
 			converted := agit.ConvertSteps(steps, ae, evalFilter)
 			for _, ce := range converted {
-				allEvals = append(allEvals, evalFromConverted(ce))
+				allEvals = append(allEvals, evalFromConverted(ce, *asActivation))
 			}
 			continue
 		}
@@ -198,7 +208,7 @@ func cmdImportAgit(ctx context.Context, args []string) error {
 					ce.Source.QualityScore = agit.EvalQualityScore(ae.InScopeAssessment.Dimensions)
 				}
 			}
-			allEvals = append(allEvals, evalFromConverted(ce))
+			allEvals = append(allEvals, evalFromConverted(ce, *asActivation))
 		}
 	}
 

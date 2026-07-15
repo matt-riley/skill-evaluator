@@ -16,7 +16,7 @@ importers:
         version: 3.7.3
       '@jdevalk/astro-seo-graph':
         specifier: ^2.0.0
-        version: 2.0.0(astro@7.0.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0))(typescript@6.0.3)
+        version: 2.1.0(astro@7.0.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0))(typescript@6.0.3)
       '@tailwindcss/vite':
         specifier: ^4.2.1
         version: 4.3.2(vite@8.1.4(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
@@ -828,13 +828,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@jdevalk/astro-seo-graph@2.0.0':
-    resolution: {integrity: sha512-W056iZNuZWIwsqO6NLSKXNw0ggfzNLShnHe5pPlRY5e32qvM2zc/wbVwTzcHw067EUvn8l6GiVYRcesSHFT+Zg==}
+  '@jdevalk/astro-seo-graph@2.1.0':
+    resolution: {integrity: sha512-yBgtiqCen7HMlD8lzTSfYCWw51OFIPkXWrp7xwTSiNkezFl8q3J+zZzFfBcg/L4zbm0K+NC99V/Bj579C4NH8A==}
     peerDependencies:
       astro: ^6.0.0
 
-  '@jdevalk/seo-graph-core@0.6.2':
-    resolution: {integrity: sha512-CjKJkytMFOlnmfib/H34iJ0+4clm7IujQqLxECO3EkIndPwkIN1xFLx762oUZieFP+Cr4jo8dosD+c2hSNEJNw==}
+  '@jdevalk/seo-graph-core@0.7.0':
+    resolution: {integrity: sha512-eIksL6dGjnbYL0A5epklYvLYy5R4E31MlwSZtjKPWuGKJZmv2vbOaJsLbhN9GRwLyl6/H9rRSHqs/hONj1rp1w==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -3407,16 +3407,16 @@ snapshots:
   '@img/sharp-win32-x64@0.35.3':
     optional: true
 
-  '@jdevalk/astro-seo-graph@2.0.0(astro@7.0.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0))(typescript@6.0.3)':
+  '@jdevalk/astro-seo-graph@2.1.0(astro@7.0.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0))(typescript@6.0.3)':
     dependencies:
-      '@jdevalk/seo-graph-core': 0.6.2(typescript@6.0.3)
+      '@jdevalk/seo-graph-core': 0.7.0(typescript@6.0.3)
       astro: 7.0.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0)
       schema-dts: 2.0.0(typescript@6.0.3)
       zod: 4.4.3
     transitivePeerDependencies:
       - typescript
 
-  '@jdevalk/seo-graph-core@0.6.2(typescript@6.0.3)':
+  '@jdevalk/seo-graph-core@0.7.0(typescript@6.0.3)':
     dependencies:
       schema-dts: 2.0.0(typescript@6.0.3)
     transitivePeerDependencies:

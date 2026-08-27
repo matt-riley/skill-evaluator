@@ -45,32 +45,55 @@ describe("404 page", () => {
   });
 });
 
-describe("Doc pages", () => {
-  test("index.html includes sidebar navigation", () => {
-    const html = readDist("index.html");
-    expect(html).toContain("Documentation");
-    expect(html).toContain("🏠 Home");
+describe("Home page", () => {
+  const html = readDist("index.html");
+
+  test("homepage title is Home", () => {
+    expect(html).toContain("Home");
   });
 
-  test("README page title is Home", () => {
-    const html = readDist("index.html");
-    expect(html).toContain("<title>Home | Skill Evaluator Documentation</title>");
+  test("renders the hero headline", () => {
+    expect(html).toContain("Stop guessing.");
+  });
+
+  test("renders the live terminal demo", () => {
+    expect(html).toContain("skill-eval loop");
+    expect(html).toContain("benchmark");
   });
 
   test("mobile menu toggle exists in built output", () => {
-    const html = readDist("index.html");
     expect(html).toContain('id="menu-toggle"');
-    expect(html).toContain('id="mobile-menu"');
-  });
-
-  test("ADRs are rendered", () => {
-    const html = readDist("adr/0001-shell-out-to-agent-runtimes/index.html");
-    expect(html).toContain("Shell out to agent runtimes");
   });
 
   test("GitHub link is present", () => {
-    const html = readDist("index.html");
     expect(html).toContain("github.com/matt-riley/skill-evaluator");
-    expect(html).toContain("🐙 GitHub");
+    expect(html).toContain("GitHub");
+  });
+});
+
+describe("Doc pages", () => {
+  const html = readDist("quick-start/index.html");
+
+  test("doc page includes sidebar navigation", () => {
+    expect(html).toContain("Documentation");
+    expect(html).toContain("Guides");
+  });
+
+  test("doc page includes mobile drawer", () => {
+    expect(html).toContain('id="mobile-menu"');
+  });
+
+  test("doc page renders page hero with title", () => {
+    expect(html).toContain("Quick Start");
+  });
+
+  test("ADRs are rendered", () => {
+    const adr = readDist("adr/0001-shell-out-to-agent-runtimes/index.html");
+    expect(adr).toContain("Shell out to agent runtimes");
+  });
+
+  test("changelog is rendered at /changelog/", () => {
+    const changelog = readDist("changelog/index.html");
+    expect(changelog).toContain("Changelog");
   });
 });

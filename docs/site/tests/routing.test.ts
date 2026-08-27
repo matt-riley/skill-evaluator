@@ -21,22 +21,22 @@ describe("routing", () => {
   });
 
   describe("buildNavLinks", () => {
-    test("orders docs logically, names index as Home, keeps ADRs above Changelog", () => {
+    test("orders docs logically, keeps ADRs above Changelog, names index by its own title", () => {
       const keys = [
         "../../../../docs/adr/0002-second.md",
-        "../../../../docs/setup.md",
+        "../../../../quick-start.md",
         "../../../../docs/adr/0001-record.md",
         "../../../../CHANGELOG.md",
-        "../../../../docs/index.md",
+        "../../../../docs/workspace.md",
       ];
       const navLinks = buildNavLinks(keys);
 
       expect(navLinks.length).toBe(5);
 
-      expect(navLinks[0].title).toBe("Home");
+      expect(navLinks[0].title).toBe("Quick Start");
       expect(navLinks[0].isAdr).toBe(false);
 
-      expect(navLinks[1].title).toBe("Setup");
+      expect(navLinks[1].title).toBe("Workspace");
       expect(navLinks[1].isAdr).toBe(false);
 
       expect(navLinks[2].title).toBe("0001 Record");

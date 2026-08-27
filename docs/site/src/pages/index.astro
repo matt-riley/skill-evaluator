@@ -1,0 +1,474 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Topbar from "../components/Topbar.astro";
+import { GITHUB_URL } from "../utils/routing";
+
+const pageTitle = "Home";
+const description =
+  "skill-eval — eval-driven iteration for AI skills. Define test cases, run your agent with and without a skill, have an LLM grade the output, and benchmark the results.";
+
+const commands = [
+  { cmd: "init", desc: "Scaffold evals/evals.json", tone: "accent" },
+  { cmd: "loop", desc: "run → grade → benchmark", tone: "info" },
+  { cmd: "report", desc: "Open the HTML report", tone: "accent" },
+  { cmd: "fix", desc: "Auto-refine failing evals", tone: "warn" },
+  { cmd: "models", desc: "Compare every agent", tone: "info" },
+];
+
+const guides = [
+  {
+    href: "/guides/first-eval/",
+    kicker: "Guide 01",
+    title: "First eval",
+    desc: "From a blank skill directory to a working loop in minutes.",
+  },
+  {
+    href: "/guides/writing-evals/",
+    kicker: "Guide 02",
+    title: "Writing evals",
+    desc: "Assertions that show whether your skill actually helps.",
+  },
+  {
+    href: "/guides/reading-results/",
+    kicker: "Guide 03",
+    title: "Reading results",
+    desc: "Pass rates, deltas, and what the benchmark is really telling you.",
+  },
+  {
+    href: "/guides/cross-model/",
+    kicker: "Guide 04",
+    title: "Cross-model",
+    desc: "Does your skill pull its weight in claude, copilot, codex, and pi?",
+  },
+];
+---
+
+<Layout title={pageTitle} description={description} bodyClass="home">
+  <div class="shell-stage noise relative min-h-dvh">
+    <div class="rail rail--left" aria-hidden="true"></div>
+    <div class="rail rail--right" aria-hidden="true"></div>
+
+    <main class="relative z-10">
+      <Topbar />
+      <div class="mx-auto w-full max-w-5xl px-5 pb-16 sm:px-8">
+        <!-- Hero -->
+        <header class="pt-16 pb-14 md:pt-24 md:pb-20">
+          <p class="mb-5 inline-flex items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-[var(--color-accent)]">
+            <span class="inline-block size-1.5 rounded-full bg-[var(--color-accent)] animate-pulse"></span>
+            eval-driven iteration for AI skills
+          </p>
+          <h1 class="font-display max-w-3xl text-[clamp(2.6rem,6.5vw,4.9rem)] font-bold leading-[1.02] tracking-[-0.03em] text-[var(--color-ink)]">
+            Stop guessing.<br />Start measuring.
+          </h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-[var(--color-ink-dim)]">
+            Define test cases, run your agent with and without a skill, have an LLM grade the
+            output, and benchmark the results. <span class="text-[var(--color-ink)]">Skill-eval
+            turns "does this skill help?" into a number.</span>
+          </p>
+          <div class="mt-9 flex flex-wrap items-center gap-3">
+            <a
+              href="/quick-start/"
+              class="group inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[#05281a] transition-all hover:bg-[#52e6a4] hover:shadow-[0_8px_24px_rgba(61,220,151,0.25)]"
+            >
+              Get started
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform group-hover:translate-x-0.5">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </a>
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 rounded-xl border border-[var(--color-line-bright)] bg-white/[0.03] px-5 py-3 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-accent)]/50"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+              </svg>
+              GitHub
+            </a>
+          </div>
+        </header>
+
+        <!-- Terminal -->
+        <section class="reveal" aria-label="skill-eval loop demo">
+          <div class="terminal" data-terminal-script>
+            <div class="terminal__bar">
+              <span class="terminal__dot terminal__dot--r"></span>
+              <span class="terminal__dot terminal__dot--y"></span>
+              <span class="terminal__dot terminal__dot--g"></span>
+              <span class="terminal__title">skill-eval loop — your-skill-workspace</span>
+              <span class="ml-auto hidden font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)] sm:block">
+                run → grade → benchmark
+              </span>
+            </div>
+            <div class="terminal__body min-h-[19.5rem]" data-terminal-lines>
+              <noscript>
+                <div class="whitespace-pre font-mono text-[0.8125rem] leading-relaxed text-[#b9c5d4]">$ skill-eval loop
+
+  eval 1/3 · with_skill · 14.2s … PASS
+  eval 2/3 · with_skill · 11.8s … PASS
+  eval 3/3 · with_skill · 19.5s … FAIL
+
+  grading: 3/3 complete · verdicts written
+  benchmark: written to iteration-1/benchmark.json
+
+  ┌─────────────────────────────────────┐
+  │ with_skill  pass 0.92 · 15.2s avg    │
+  │ baseline    pass 0.41 · 21.9s avg    │
+  │ delta       +0.51 — skill is helping │
+  └─────────────────────────────────────┘</div>
+              </noscript>
+            </div>
+          </div>
+          <p class="mt-4 text-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
+            an actual loop, rendered live
+          </p>
+        </section>
+
+        <!-- The three moves -->
+        <section class="mt-24 grid gap-4 md:grid-cols-3" aria-label="The loop">
+          <a href="/eval-workflow/" class="panel reveal p-6 transition-colors hover:border-[var(--color-accent)]/40">
+            <div class="mb-8 flex items-center justify-between">
+              <span class="chip chip--accent">01</span>
+              <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">commands</span>
+            </div>
+            <h2 class="font-display text-xl font-semibold text-[var(--color-ink)]">Run</h2>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-dim)]">
+              `skill-eval run` executes every eval with and without your skill loaded,
+              capturing outputs, timing, and tokens.
+            </p>
+          </a>
+          <a href="/eval-workflow/" class="panel reveal p-6 transition-colors hover:border-[var(--color-accent)]/40" style="transition-delay:80ms">
+            <div class="mb-8 flex items-center justify-between">
+              <span class="chip chip--accent">02</span>
+              <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">judge</span>
+            </div>
+            <h2 class="font-display text-xl font-semibold text-[var(--color-ink)]">Grade</h2>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-dim)]">
+              A judge agent scores each output against your assertions — or local matchers
+              decide instantly, for free.
+            </p>
+          </a>
+          <a href="/guides/reading-results/" class="panel reveal p-6 transition-colors hover:border-[var(--color-accent)]/40" style="transition-delay:160ms">
+            <div class="mb-8 flex items-center justify-between">
+              <span class="chip chip--accent">03</span>
+              <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">numbers</span>
+            </div>
+            <h2 class="font-display text-xl font-semibold text-[var(--color-ink)]">Benchmark</h2>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--color-ink-dim)]">
+              Pass rates, deltas, and token burn — an honest scoreboard for what your skill
+              is worth.
+            </p>
+          </a>
+        </section>
+
+        <!-- The split: without vs with -->
+        <section class="mt-28 grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center" aria-label="With and without your skill">
+          <div class="reveal">
+            <p class="page-hero__kicker">why baselines</p>
+            <h2 class="font-display text-3xl font-bold tracking-tight text-[var(--color-ink)] md:text-4xl">
+              The golden rule of skill evaluation
+            </h2>
+            <p class="mt-4 leading-relaxed text-[var(--color-ink-dim)]">
+              A good eval is one where the <strong class="font-semibold text-[var(--color-ink)]">baseline
+              fails more often than the with-skill run</strong>. If the bare agent sails through
+              everything, your skill is decoration — and you can't tell the difference.
+            </p>
+            <ul class="mt-6 space-y-3 text-sm text-[var(--color-ink-dim)]">
+              <li class="flex gap-3">
+                <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--color-accent)]"></span>
+                <span><code class="font-mono text-[0.85em] text-[#b9c3d2]">skill-eval run --baseline-only</code> verifies your evals actually fail without the skill.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--color-accent-2)]"></span>
+                <span><code class="font-mono text-[0.85em] text-[#b9c3d2]">skill-eval loop --models</code> checks every agent, not just the one you use.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--color-warn)]"></span>
+                <span><code class="font-mono text-[0.85em] text-[#b9c3d2]">skill-eval loop --fix</code> feeds the judge's critique back to the agent until it lands.</span>
+              </li>
+            </ul>
+          </div>
+
+          <figure class="panel reveal p-6 md:p-8" style="transition-delay:120ms">
+            <div class="mb-6 flex items-center justify-between">
+              <figcaption class="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-[var(--color-ink-dim)]">
+                pass rate — same evals, two conditions
+              </figcaption>
+              <span class="chip">typical run</span>
+            </div>
+            <div class="flex items-end justify-around gap-10 px-2 pb-2 pt-8 md:px-6">
+              <div class="flex w-28 flex-col items-center gap-3">
+                <span class="font-mono text-2xl font-semibold text-[var(--color-warn)]">41%</span>
+                <div class="flex h-40 w-full items-end overflow-hidden rounded-lg border border-[var(--color-line)] bg-white/[0.02]">
+                  <div class="w-full origin-bottom rounded-t-md bg-[#2a3040] [animation:grow-bar_1.2s_var(--ease-out-soft)_both]" style="height:41%"></div>
+                </div>
+                <span class="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">baseline</span>
+              </div>
+              <div class="flex w-28 flex-col items-center gap-3">
+                <span class="font-mono text-2xl font-semibold text-[var(--color-accent)]">92%</span>
+                <div class="flex h-40 w-full items-end overflow-hidden rounded-lg border border-[rgba(61,220,151,0.35)] bg-[rgba(61,220,151,0.05)]">
+                  <div class="w-full origin-bottom rounded-t-md bg-gradient-to-t from-[#27b47a] to-[#5ee6ac] [animation:grow-bar_1.2s_var(--ease-out-soft)_both] [animation-delay:200ms]" style="height:92%"></div>
+                </div>
+                <span class="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-[var(--color-accent)]">with-skill</span>
+              </div>
+            </div>
+            <p class="mt-6 border-t border-[var(--color-line)] pt-4 text-center font-mono text-[0.6875rem] text-[var(--color-ink-faint)]">
+              +0.51 delta · your skill carries its weight
+            </p>
+          </figure>
+        </section>
+
+        <!-- Install -->
+        <section class="reveal mt-28" aria-label="Install">
+          <div class="panel p-6 md:p-10">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p class="page-hero__kicker mb-2">install</p>
+                <h2 class="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)]">Up and running in one line</h2>
+              </div>
+              <a href="/quick-start/" class="text-sm text-[var(--color-accent)] hover:text-[#6ee7b7]">Full quick start →</a>
+            </div>
+            <div class="mt-6 grid gap-3 md:grid-cols-2">
+              <div class="rounded-xl border border-[var(--color-line-bright)] bg-[#0c0f15] p-4">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">homebrew</span>
+                  <button type="button" class="code-copy !relative !top-auto !right-auto opacity-100" data-copy="brew install matt-riley/tools/skill-eval">Copy</button>
+                </div>
+                <code class="font-mono text-[0.8125rem] text-[#d7dde8]">brew install matt-riley/tools/skill-eval</code>
+              </div>
+              <div class="rounded-xl border border-[var(--color-line-bright)] bg-[#0c0f15] p-4">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">go install</span>
+                  <button type="button" class="code-copy !relative !top-auto !right-auto opacity-100" data-copy="go install github.com/matt-riley/skill-evaluator@latest">Copy</button>
+                </div>
+                <code class="font-mono text-[0.8125rem] text-[#d7dde8]">go install github.com/matt-riley/skill-evaluator@latest</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Command surface -->
+        <section class="mt-28" aria-label="Command surface">
+          <div class="mb-8 flex items-end justify-between">
+            <h2 class="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)]">The whole tool, six commands</h2>
+            <a href="/commands/" class="text-sm text-[var(--color-accent)] hover:text-[#6ee7b7]">All commands →</a>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {commands.map((c, i) => (
+              <a href="/commands/" class="panel reveal flex items-center gap-4 p-5 transition-colors hover:border-[var(--color-accent)]/40" style={`transition-delay:${i * 60}ms`}>
+                <span class={`chip ${c.tone === "warn" ? "!border-[rgba(242,184,75,0.35)] !bg-[rgba(242,184,75,0.07)] !text-[var(--color-warn)]" : c.tone === "info" ? "!border-[rgba(84,211,242,0.35)] !bg-[rgba(84,211,242,0.07)] !text-[var(--color-accent-2)]" : "chip--accent"}`}>
+                  {`skill-eval ${c.cmd}`}
+                </span>
+                <span class="ml-auto text-xs text-[var(--color-ink-faint)]">{c.desc}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <!-- Guides -->
+        <section class="mt-28" aria-label="Guides">
+          <div class="mb-8 flex items-end justify-between">
+            <div>
+              <p class="page-hero__kicker mb-2">guides</p>
+              <h2 class="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)]">Start here, in order</h2>
+            </div>
+            <a href="/guides/writing-evals/" class="text-sm text-[var(--color-accent)] hover:text-[#6ee7b7]">Writing evals →</a>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            {guides.map((g, i) => (
+              <a href={g.href} class="panel reveal group p-6 transition-colors hover:border-[var(--color-accent)]/40" style={`transition-delay:${i * 70}ms`}>
+                <div class="mb-4 flex items-center justify-between">
+                  <span class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{g.kicker}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="text-[var(--color-ink-faint)] transition-all group-hover:translate-x-1 group-hover:text-[var(--color-accent)]">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </div>
+                <h3 class="font-display text-lg font-semibold text-[var(--color-ink)]">{g.title}</h3>
+                <p class="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-dim)]">{g.desc}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <!-- Closing -->
+        <footer class="mt-28 border-t border-[var(--color-line)] pt-10 pb-4">
+          <div class="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
+            <div class="flex items-center gap-3">
+              <span class="brandmark__glyph" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1.5 9.9 6.1 14.5 8 9.9 9.9 8 14.5 6.1 9.9 1.5 8 6.1 6.1 8 1.5Z" stroke="#3ddc97" stroke-width="1.4" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <div>
+                <p class="font-display text-sm font-semibold text-[var(--color-ink)]">skill-evaluator</p>
+                <p class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">GPL-3.0 · Go · built for agents</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--color-ink-dim)]">
+              <a href="/commands/" class="hover:text-[var(--color-ink)]">Commands</a>
+              <a href="/configuration/" class="hover:text-[var(--color-ink)]">Configuration</a>
+              <a href="/changelog/" class="hover:text-[var(--color-ink)]">Changelog</a>
+              <a href={GITHUB_URL} class="hover:text-[var(--color-ink)]" target="_blank" rel="noopener noreferrer">Source</a>
+            </div>
+          </div>
+          <p class="mt-8 font-mono text-[0.6875rem] text-[var(--color-ink-faint)]">
+            skilleval.mattriley.tools — inspired by <a href="https://agentskills.io/skill-creation/evaluating-skills" class="underline decoration-[var(--color-line-bright)] underline-offset-4 hover:text-[var(--color-ink)]">agentskills.io</a>
+          </p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  // ---- Live terminal: type out a real loop ----
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const host = document.querySelector<HTMLElement>("[data-terminal-lines]");
+
+  const script: Array<{ text: string; cls: string; type?: boolean; pause?: number }> = [
+    { text: "skill-eval loop", cls: "terminal__line--cmd", type: true, pause: 650 },
+    { text: "", cls: "", pause: 300 },
+    { text: "iter 3 evals in ~45s…", cls: "terminal__line--dim", pause: 500 },
+    { text: "eval 1/3 · with_skill · 14.2s", cls: "terminal__line--ok", pause: 420 },
+    { text: "  ✓ chart file exists · axes labeled · 3 months", cls: "terminal__line--dim", pause: 350 },
+    { text: "eval 2/3 · with_skill · 11.8s", cls: "terminal__line--ok", pause: 420 },
+    { text: "  ✓ all 4 assertions pass", cls: "terminal__line--dim", pause: 350 },
+    { text: "eval 3/3 · with_skill · 19.5s", cls: "terminal__line--warn", pause: 420 },
+    { text: "  ✗ assertion 2: axis title missing", cls: "terminal__line--dim", pause: 500 },
+    { text: "", cls: "", pause: 250 },
+    { text: "grading 3/3 complete · verdicts written", cls: "terminal__line--info", pause: 420 },
+    { text: "benchmark written → iteration-1/benchmark.json", cls: "terminal__line--info", pause: 650 },
+    { text: "", cls: "", pause: 200 },
+    { text: "pass rate — with_skill 0.92 · baseline 0.41", cls: "terminal__line--ok", pause: 550 },
+    { text: "delta +0.51 · your skill is earning its context", cls: "terminal__line--ok", pause: 2200 },
+  ];
+
+  if (host && reduced) {
+    // Static transcript for reduced motion
+    host.innerHTML = script
+      .filter((s) => s.text !== "")
+      .map((s) => `<div class="terminal__line ${s.cls}">${s.text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</div>`)
+      .join("");
+  } else if (host) {
+    let li = 0;
+    let ci = 0;
+    const node: HTMLElement = host;
+
+    function showCursor(show: boolean) {
+      let c = node.querySelector<HTMLElement>(".terminal__cursor");
+      if (show && !c) {
+        c = document.createElement("span");
+        c.className = "terminal__cursor";
+        node.appendChild(c);
+      }
+      if (!show && c) c.remove();
+    }
+
+    function typeNext() {
+      if (li >= script.length) {
+        setTimeout(() => {
+          node.innerHTML = "";
+          li = 0;
+          ci = 0;
+          typeNext();
+        }, 1400);
+        return;
+      }
+      const step = script[li];
+      const line = document.createElement("div");
+      line.className = `terminal__line ${step.cls}`;
+      node.appendChild(line);
+      showCursor(true);
+
+      if (step.type && step.text) {
+        const iv = setInterval(() => {
+          ci += 1;
+          line.textContent = step.text.slice(0, ci);
+          if (ci >= step.text.length) {
+            clearInterval(iv);
+            li += 1;
+            setTimeout(typeNext, step.pause ?? 300);
+          }
+        }, 46);
+      } else {
+        line.textContent = step.text;
+        li += 1;
+        setTimeout(typeNext, step.pause ?? 300);
+      }
+    }
+    typeNext();
+  }
+
+  // ---- Copy buttons (homepage) ----
+  document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = btn.dataset.copy || "";
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        /* clipboard unavailable */
+      }
+      btn.textContent = "Copied";
+      btn.classList.add("is-copied");
+      setTimeout(() => {
+        btn.textContent = "Copy";
+        btn.classList.remove("is-copied");
+      }, 1600);
+    });
+  });
+
+  // ---- Scroll progress (topbar) ----
+  const progress = document.getElementById("scroll-progress");
+  if (progress) {
+    const update = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      const p = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+      progress.style.transform = `scaleX(${p})`;
+      progress.classList.toggle("is-visible", p > 0.01);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+  }
+
+  // ---- Reveal on scroll ----
+  const revealEls = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-in");
+          io.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0.06 }
+  );
+  for (const el of revealEls) {
+    const rect = el.getBoundingClientRect();
+    // Already in view (or above) — reveal immediately so no content is hidden.
+    if (rect.top < window.innerHeight * 1.15) {
+      el.classList.add("is-in");
+    } else {
+      io.observe(el);
+    }
+  }
+  // Safety net: never leave content hidden after load.
+  window.addEventListener("load", () => {
+    revealEls.forEach((el) => {
+      if (!el.classList.contains("is-in")) el.classList.add("is-in");
+    });
+  });
+</script>
+
+<style>
+  @keyframes grow-bar {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+</style>

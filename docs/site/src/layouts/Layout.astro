@@ -60,6 +60,10 @@ const csp =
         rel="stylesheet"
       />
     </noscript>
+
+    <script is:inline>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body class={`font-sans antialiased overflow-x-hidden ${bodyClass}`}>
     <slot />

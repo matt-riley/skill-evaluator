@@ -775,32 +775,33 @@ body {
 /* ---------------------------------------------------------------------------
    Reveal on scroll
 --------------------------------------------------------------------------- */
-.reveal {
+.js .reveal {
   opacity: 0;
   transform: translateY(14px);
   transition:
     opacity 0.6s var(--ease-out-soft),
     transform 0.6s var(--ease-out-soft);
 }
-.reveal.is-in {
+.js .reveal.is-in {
   opacity: 1;
   transform: translateY(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
+  .js .reveal {
     opacity: 1;
     transform: none;
   }
 }
 
 /* ---------------------------------------------------------------------------
-   Header page hero (doc pages)
+   Page hero (doc pages) — CSS-only entry, never JS-gated
 --------------------------------------------------------------------------- */
 .page-hero {
   border-bottom: 1px solid var(--color-line);
   padding: 3.5rem 0 2.25rem;
   margin-bottom: 2.25rem;
   position: relative;
+  animation: hero-in 0.6s var(--ease-out-soft) both;
 }
 .page-hero::after {
   content: "";
@@ -842,6 +843,16 @@ body {
   color: var(--color-ink-dim);
   font-size: 1.0625rem;
   line-height: 1.7;
+}
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ---------------------------------------------------------------------------

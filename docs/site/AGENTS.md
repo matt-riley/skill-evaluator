@@ -1,10 +1,18 @@
 # Agent Instructions — docs/site
 
-This is the documentation site for skill-evaluator, built with **Astro 6** (static output).
+This is the documentation site for skill-evaluator, built with **Astro 7** (static output).
+
+## Design system
+
+**"Precision Instrument"** — dark glass technical workspace. Near-black surfaces, hairline
+rails with corner markers, frosted panels, emerald accent used as a verdict signal.
+Tokens, typography, layout, and motion rules: see `DESIGN.md`. Supersedes the old
+neo-brutalist theme (mint dot grid, thick borders, emoji nav) — do not reintroduce
+neo-brutalist utilities, emoji nav labels, or the mint palette.
 
 ## Tech stack
 
-- **Astro 6** — SSG, `output: "static"` in `astro.config.mjs`
+- **Astro 7** — SSG, `output: "static"` in `astro.config.mjs`
 - **Tailwind CSS v4** — styling via `@tailwindcss/vite` plugin
 - **@tailwindcss/typography** — prose styling for rendered markdown
 - **Cloudflare Pages** — deployment target (`wrangler.toml`)
@@ -52,7 +60,7 @@ docs/site/
 - **Conventional commits** — e.g., `feat(docs):`, `fix(docs):`, `chore(docs):`, `test(docs):`.
 - **Formatting**: oxfmt with config in `.oxfmtrc.json`. Run `pnpm format` before committing.
 - **Linting**: oxlint. Run `pnpm lint`.
-- **Neo-brutalist design**: thick black borders, colored backgrounds (neo-pink, neo-yellow, neo-blue, neo-green, neo-purple), bold shadows, playful transforms. Defined in `global.css` as Tailwind theme colors.
+- **Design system**: dark glass "Precision Instrument" per DESIGN.md. Emoji-free nav labels, mono utility labels, one emerald accent.
 - **Markdown source**: the site renders `.md` files from the repo root (4 dirs up) and `docs/adr/`. Agent instruction files (AGENTS.md, CLAUDE.md, CONTEXT.md) are filtered out.
 
 ## Testing

@@ -8,7 +8,6 @@ export function cleanPath(key: string): string {
 type NavMeta = { path: string; title?: string };
 
 const ORDERED_PAGES: NavMeta[] = [
-  { path: "index", title: "Home" },
   { path: "quick-start" },
   { path: "eval-workflow" },
   { path: "commands" },
@@ -20,10 +19,15 @@ const ORDERED_PAGES: NavMeta[] = [
   { path: "guides/giving-feedback" },
   { path: "guides/auto-fixing" },
   { path: "guides/cross-model" },
+  { path: "guides/activation-evals" },
+  { path: "guides/importing-agit-sessions" },
 ];
 
 function formatTitle(name: string): string {
-  return name.toLowerCase().replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return name
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function buildNavLinks(keys: string[]) {

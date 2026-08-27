@@ -1,32 +1,51 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Topbar from "../components/Topbar.astro";
+import { GITHUB_URL } from "../utils/routing";
 ---
 
-<Layout title="404: Page Not Found" description="The page you’re looking for doesn’t exist. Head back to the Skill Eval documentation homepage to find what you need." noindex={true}>
-  <div class="flex min-h-screen text-black font-sans selection:bg-neo-pink selection:text-white bg-[#f8f9fa] items-center justify-center p-6 relative overflow-hidden">
-    
-    <!-- Decorative elements in background -->
-    <div class="absolute -top-10 -left-10 w-40 h-40 bg-neo-yellow border-4 border-black rounded-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] -z-0 hidden md:block"></div>
-    <div class="absolute bottom-20 -right-5 w-32 h-32 bg-neo-green border-4 border-black rounded-3xl rotate-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] -z-0 hidden md:block"></div>
-    
-    <main class="w-full max-w-3xl mx-auto relative z-10 text-center">
-      <div class="bg-white border-4 border-black rounded-[3rem] p-10 md:p-16 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
-        
-        <div class="inline-block bg-neo-yellow border-4 border-black rounded-3xl px-8 py-4 mb-8 -rotate-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <h1 class="text-6xl md:text-8xl font-black tracking-tight text-black">404</h1>
-        </div>
-        
-        <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-black mb-6">
-          Oops! This page wandered off. 🕵️‍♂️
-        </h2>
-        
-        <p class="text-xl md:text-2xl font-bold text-gray-800 mb-10 max-w-xl mx-auto leading-relaxed">
-          The link you followed might be broken, or the page may have been removed. Let's get you back on track.
+<Layout
+  title="404: Page Not Found"
+  description="The page you're looking for doesn't exist. Head back to the Skill Eval documentation homepage to find what you need."
+  noindex={true}
+>
+  <div class="shell-stage relative flex min-h-dvh flex-col">
+    <div class="rail rail--left" aria-hidden="true"></div>
+    <div class="rail rail--right" aria-hidden="true"></div>
+
+    <Topbar />
+
+    <main class="relative z-10 flex flex-1 items-center justify-center px-5 py-24">
+      <div class="w-full max-w-2xl text-center">
+        <p class="mb-6 font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
+          <span class="text-[var(--color-danger)]">error</span> · eval not found
         </p>
-        
-        <a href="/" class="inline-block bg-neo-pink text-white font-black text-xl md:text-2xl px-8 py-4 rounded-2xl border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
-          ← Back to Home
-        </a>
+        <h1 class="font-display text-[clamp(4.5rem,16vw,8.5rem)] font-bold leading-none tracking-[-0.04em] text-[var(--color-ink)]">
+          4<span class="text-[var(--color-accent)]">0</span>4
+        </h1>
+        <p class="mx-auto mt-6 max-w-md text-lg leading-relaxed text-[var(--color-ink-dim)]">
+          This route doesn't exist. The assertion failed — and like any good eval, it's time
+          to check the baseline.
+        </p>
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="/"
+            class="inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-[#05281a] transition-all hover:bg-[#52e6a4]"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 18l-6-6 6-6" />
+            </svg>
+            Back to Home
+          </a>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center rounded-xl border border-[var(--color-line-bright)] bg-white/[0.03] px-5 py-3 text-sm font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-accent)]/50"
+          >
+            Report it on GitHub
+          </a>
+        </div>
       </div>
     </main>
   </div>

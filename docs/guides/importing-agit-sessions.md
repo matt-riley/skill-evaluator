@@ -3,7 +3,6 @@ title: Importing Agit Sessions
 description: Learn how to magically turn your interactive agit sessions into a brand new evals.json corpus!
 ---
 
-# 🪄 Turning Sessions into Evals
 
 Writing evals from scratch can take time. But what if you could just *do the work* with your AI assistant and automatically turn that real-world interaction into an evaluation rubric?
 

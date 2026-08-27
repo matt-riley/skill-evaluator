@@ -3,7 +3,6 @@ title: Activation Evals
 description: Test whether your skill's name and description trigger for the right tasks — not just whether the skill body executes well.
 ---
 
-# 🎯 Activation Evals
 
 Most evals test **execution**: given the skill path, does the agent produce good
 output? But there's a second axis to skill quality that no execution eval can

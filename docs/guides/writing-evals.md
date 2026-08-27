@@ -3,7 +3,6 @@ title: Writing Useful Evals
 description: How to design evals and assertions that show whether your skill actually helps the model.
 ---
 
-# 🎯 Writing Useful Evals
 
 Welcome to the heart of `skill-eval`! If you're new to writing evals (short for evaluations), think of them as friendly grading rubrics for your AI. Instead of traditional unit tests that just check if code compiles, an eval checks if the AI made the *right kinds of decisions* when following your skill's instructions.
 

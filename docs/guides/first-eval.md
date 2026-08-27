@@ -3,7 +3,6 @@ title: Running Your First Evaluation
 description: A step-by-step walkthrough of setting up evals, configuring your skill, and running the full skill-eval loop for the first time.
 ---
 
-# 🌱 Running Your First Evaluation
 
 Ready to see your skill put through its paces? This guide walks you through the full journey — from a blank slate to a working eval loop — in just a few minutes.
 
@@ -86,7 +85,7 @@ Watch it go! This single command handles the whole cycle:
 2. **Grade** — asks the judge agent to check each assertion, producing a `grading.json` with PASS/FAIL verdicts.
 3. **Benchmark** — rolls all the stats up into a `benchmark.json` so you can see the delta at a glance.
 
-<video src="/guides/first-eval.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
+<video src="/guides/first-eval.mp4" controls muted width="100%"></video>
 
 ---
 

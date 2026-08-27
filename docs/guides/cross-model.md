@@ -3,7 +3,6 @@ title: Cross-Model Benchmarking
 description: Run your evals against multiple agents at once — pi, claude, copilot — and see which one your skill helps the most. Spot weak spots before your users do!
 ---
 
-# 🔬 Cross-Model Benchmarking
 
 Your skill works great in **pi**. But does it help **claude**? What about **copilot**? If you're building a skill meant to be runtime-agnostic, you need to know it pulls its weight *everywhere* — including across the models each agent supports.
 
@@ -21,7 +20,7 @@ skill-eval loop --models pi:claude-sonnet,claude:opus-4-8,copilot:gpt-5
 
 skill-eval runs the full `run → grade → benchmark` cycle for each model. Each one gets its own with-skill and baseline run, and the results land side-by-side in `benchmark.json`.
 
-<video src="/guides/cross-model.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
+<video src="/guides/cross-model.mp4" controls muted width="100%"></video>
 
 ---
 

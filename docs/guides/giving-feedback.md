@@ -3,7 +3,6 @@ title: Giving Feedback
 description: Learn how to write useful feedback in feedback.json after a grading run, and how skill-eval passes that context to the judge on the next iteration.
 ---
 
-# 💬 Giving Feedback (and What Happens Next)
 
 After grading, skill-eval leaves a `feedback.json` in your workspace. It's easy to overlook — but filling it in is one of the most powerful things you can do to improve your skill quickly.
 
@@ -46,7 +45,7 @@ cat <skill-name>-workspace/iteration-1/grading.json | jq .
 
 Look for `"result": "FAIL"` entries. The `reasoning` field tells you *why* the judge failed an assertion — that's your cue for what to address in feedback.
 
-<video src="/guides/feedback-loop.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
+<video src="/guides/feedback-loop.mp4" controls muted width="100%"></video>
 
 ---
 

@@ -3,7 +3,6 @@ title: Configuration
 description: Configure skill-evaluator through a global YAML file and per-skill overrides, setting defaults for the run agent, judge agent, and optional model names.
 ---
 
-# ⚙️ Configuration
 
 We use a simple two-tier YAML setup (with a handy JSON schema for autocomplete):
 

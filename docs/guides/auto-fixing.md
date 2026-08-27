@@ -3,7 +3,6 @@ title: Auto-Fixing with --fix
 description: Let skill-eval automatically re-run failing evals — the judge's feedback gets fed back to the agent as a critique until assertions pass or the score stops improving.
 ---
 
-# 🪄 Auto-Fixing Failing Evals
 
 Sometimes your skill is *almost* there — one assertion keeps failing, and you know exactly what the agent got wrong. Instead of tweaking your SKILL.md and re-running the whole loop by hand, let skill-eval handle it for you!
 
@@ -33,7 +32,7 @@ Here's the play-by-play:
 
 The best attempt wins, and its grading replaces the original!
 
-<video src="/guides/auto-fixing.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
+<video src="/guides/auto-fixing.mp4" controls muted width="100%"></video>
 
 ---
 

@@ -3,7 +3,6 @@ title: Reading Your Results
 description: Learn how to interpret benchmark.json and grading.json after a skill-eval run — understand pass rates, deltas, and what each result type means for your skill.
 ---
 
-# 📊 Reading Your Results
 
 After `skill-eval loop` finishes, two files tell you everything you need to know: `benchmark.json` for the big picture, and `grading.json` for the detail. Here's how to read them like a pro!
 
@@ -42,7 +41,7 @@ For a single-model run, you'll see something like this:
 }
 ```
 
-<video src="/guides/reading-results.mp4" controls muted width="100%" class="rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"></video>
+<video src="/guides/reading-results.mp4" controls muted width="100%"></video>
 
 ### What each field means
 

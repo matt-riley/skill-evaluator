@@ -3,7 +3,6 @@ title: Home
 description: skill-eval — automate eval-driven iteration for AI skills. Run, grade, and benchmark your agent outputs.
 ---
 
-# skill-eval
 
 CLI tool for eval-driven AI skill iteration. Define test cases, run your agent with and without a skill, have an LLM grade the results, and generate benchmark reports.
 

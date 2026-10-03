@@ -171,14 +171,14 @@ func aggregateAcrossModels(models map[string]ModelBenchmark) (RunSummary, RunSum
 		bsTok = append(bsTok, mb.Baseline.Tokens.Mean)
 	}
 	return RunSummary{
-			PassRate:    Stats{Mean: mean(wsPR), Stddev: stddev(wsPR)},
-			TimeSeconds: Stats{Mean: mean(wsT), Stddev: stddev(wsT)},
-			Tokens:      Stats{Mean: mean(wsTok), Stddev: stddev(wsTok)},
-		}, RunSummary{
-			PassRate:    Stats{Mean: mean(bsPR), Stddev: stddev(bsPR)},
-			TimeSeconds: Stats{Mean: mean(bsT), Stddev: stddev(bsT)},
-			Tokens:      Stats{Mean: mean(bsTok), Stddev: stddev(bsTok)},
-		}
+		PassRate:    Stats{Mean: mean(wsPR), Stddev: stddev(wsPR)},
+		TimeSeconds: Stats{Mean: mean(wsT), Stddev: stddev(wsT)},
+		Tokens:      Stats{Mean: mean(wsTok), Stddev: stddev(wsTok)},
+	}, RunSummary{
+		PassRate:    Stats{Mean: mean(bsPR), Stddev: stddev(bsPR)},
+		TimeSeconds: Stats{Mean: mean(bsT), Stddev: stddev(bsT)},
+		Tokens:      Stats{Mean: mean(bsTok), Stddev: stddev(bsTok)},
+	}
 }
 
 // splitAndAggregate splits results into with_skill and baseline, then aggregates each.

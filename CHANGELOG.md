@@ -4,6 +4,23 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 ---
 
 
+## [1.6.0](https://github.com/matt-riley/skill-evaluator/compare/v1.5.0...v1.6.0) (2026-10-08)
+
+
+### Features
+
+* add activation evals grading skill discovery precision and recall ([#36](https://github.com/matt-riley/skill-evaluator/issues/36)) ([0650158](https://github.com/matt-riley/skill-evaluator/commit/0650158bdc2e6d6aeae91c2d27a4dd0509e3269a))
+* **docs:** custom homepage with animated eval terminal ([edcdeb0](https://github.com/matt-riley/skill-evaluator/commit/edcdeb068ce7fa362e85cf9630c21c4d068a84aa))
+* **docs:** redesign as dark glass precision instrument ([5972eb6](https://github.com/matt-riley/skill-evaluator/commit/5972eb6ad7f73221094fffce1c453c4e9e928548))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/santhosh-tekuri/jsonschema/v6 to v6.0.3 ([d3110dc](https://github.com/matt-riley/skill-evaluator/commit/d3110dc3d27c70080a113b565a9ed9b580bb03f5))
+* **docs:** fill empty right rail with on-this-page TOC ([a3723f1](https://github.com/matt-riley/skill-evaluator/commit/a3723f1cd7950d323d25154cb70e8560e0268b3d))
+* **docs:** show page hero immediately on first load ([5d61eec](https://github.com/matt-riley/skill-evaluator/commit/5d61eec608dc8a1acf95cafa658b2066b82a1aed))
+* split flock-based locking into OS-conditional files for Windows compat ([#32](https://github.com/matt-riley/skill-evaluator/issues/32)) ([bbc1680](https://github.com/matt-riley/skill-evaluator/commit/bbc1680b63e17db27e18dd8137fa440e3a0cdae8))
+
 ## [1.5.0](https://github.com/matt-riley/skill-evaluator/compare/v1.4.0...v1.5.0) (2026-07-02)
 
 

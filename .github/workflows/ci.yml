@@ -16,7 +16,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}:${{ github.ref }}:ci
       cancel-in-progress: true
-    uses: matt-riley/matt-riley-ci/.github/workflows/ci.yml@cb986078a5bd4775e5fb05348f3618e41fedf4de # v4
+    uses: matt-riley/matt-riley-ci/.github/workflows/ci.yml@0a310f1286537ed4fd000af4b35cd6459b00448d # v4
     with:
       test: true
       lint: true
@@ -31,4 +31,4 @@ jobs:
       cancel-in-progress: true
     needs: ci
     if: ${{ always() }}
-    uses: matt-riley/matt-riley-ci/.github/workflows/go-security.yml@cb986078a5bd4775e5fb05348f3618e41fedf4de # v4
+    uses: matt-riley/matt-riley-ci/.github/workflows/go-security.yml@0a310f1286537ed4fd000af4b35cd6459b00448d # v4

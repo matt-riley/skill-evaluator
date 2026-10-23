@@ -4,6 +4,13 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 ---
 
 
+## [1.6.1](https://github.com/matt-riley/skill-evaluator/compare/v1.6.0...v1.6.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** bump Go to 1.26.10 for stdlib security fixes ([#175](https://github.com/matt-riley/skill-evaluator/issues/175)) ([76945df](https://github.com/matt-riley/skill-evaluator/commit/76945dffd4a44e26f8adcb73d55e0744e65b759c))
+
 ## [1.6.0](https://github.com/matt-riley/skill-evaluator/compare/v1.5.0...v1.6.0) (2026-10-08)
 
 

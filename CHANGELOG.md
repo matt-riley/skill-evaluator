@@ -4,6 +4,13 @@ description: Changelog for skill-evaluator, listing releases and notable changes
 ---
 
 
+## [1.6.2](https://github.com/matt-riley/skill-evaluator/compare/v1.6.1...v1.6.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **deps:** override postcss-selector-parser to 6.1.5 in docs site ([#186](https://github.com/matt-riley/skill-evaluator/issues/186)) ([615c5cc](https://github.com/matt-riley/skill-evaluator/commit/615c5cc338efd7cdb974698179ad99f9fef0125c))
+
 ## [1.6.1](https://github.com/matt-riley/skill-evaluator/compare/v1.6.0...v1.6.1) (2026-10-23)
 
 

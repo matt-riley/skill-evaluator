@@ -20,7 +20,7 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-    uses: matt-riley/matt-riley-ci/.github/workflows/release-please.yml@d903a20396dce0f98960a8c9ea96848349682540 # v4
+    uses: matt-riley/matt-riley-ci/.github/workflows/release-please.yml@f846763f763247cb0140e3dd08002280b001f6cf # v4
     secrets:
       token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 

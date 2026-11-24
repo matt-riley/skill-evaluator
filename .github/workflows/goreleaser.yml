@@ -9,7 +9,7 @@ jobs:
   goreleaser:
     permissions:
       contents: write
-    uses: matt-riley/matt-riley-ci/.github/workflows/go-goreleaser.yml@d903a20396dce0f98960a8c9ea96848349682540 # v4
+    uses: matt-riley/matt-riley-ci/.github/workflows/go-goreleaser.yml@f846763f763247cb0140e3dd08002280b001f6cf # v4
     with:
       environment: release
     secrets:
